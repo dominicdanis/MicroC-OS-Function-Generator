@@ -46,11 +46,9 @@
 *********************************************************************************************************
 */
 #define APP_CFG_START_TASK_PRIO              2u
-#define APP_CFG_SWCOUNTER_TASK_PRIO          6u
 #define APP_CFG_LCD_TASK_PRIO		         8u
-#define APP_CFG_APP_TIMER_DISPLAY_TASK_PRIO  10u
 #define APP_CFG_KEY_TASK_PRIO		         12u
-#define APP_CFG_APP_TIMER_CONTROL_TASK_PRIO  14u
+#define APP_CFG_SINEGEN_TASK_PRIO            16u
 
 /*
 *********************************************************************************************************
@@ -59,10 +57,8 @@
 */
 
 #define APP_CFG_START_TASK_STK_SIZE					 	128u
-#define APP_CFG_APP_TIMER_DISPLAY_TASK_STK_SIZE      	128u
-#define APP_CFG_APP_TIMER_CONTROL_TASK_STK_SIZE       	128u
 #define APP_CFG_LCD_TASK_STK_SIZE   					128u
 #define APP_CFG_KEY_TASK_STK_SIZE   					128u
-#define APP_CFG_SWCOUNTER_TASK_STK_SIZE 				128u
+#define APP_CFG_SINEGEN_TASK_STK_SIZE                   128u
 
 #endif
