@@ -13,6 +13,10 @@
 #include "SineGeneration.h"
 #include "PulseTrain.h"
 #include "MemoryTools.h"
+#include "SineGeneration.h"
+#include "PulseTrain.h"
+#include "MemoryTools.h"
+
 
 #define FREQ_LIMIT_HIGH 10000
 #define FREQ_LIMIT_LOW 10
@@ -128,10 +132,13 @@ static void appStartTask(void *p_arg) {
 	LcdInit();
 	KeyInit();
 
-	/* TODO: validate save state from EEPROM using checksum? rn always invalid */
 	if(0) {
+	//if(MemIsValid()) {
 		// read values from EEPROM
 		//current_state = MemLoadState();
+		OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+			UIState = current_state;
+		current_state = MemLoadState();
 		OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
 			UIState = current_state;
 		OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
