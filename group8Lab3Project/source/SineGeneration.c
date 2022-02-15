@@ -22,8 +22,8 @@ static OS_TCB sineGenTaskTCB;
 ****************************************************************************************/
 static CPU_STK sineGenTaskTaskStk[APP_CFG_SINEGEN_TASK_STK_SIZE];
 typedef struct{
-    INT8U frequency;
-    INT8U amplitude;
+    INT16U frequency;
+    INT8U level;
 }SINE_SPECS;
 /****************************************************************************************
 * Private Resources
@@ -38,7 +38,6 @@ static void sineGenTask(void *p_arg);
 * Private Function Prototypes
 *****************************************************************************************/
 static SINE_SPECS sineGetSpecs(void);
-
 /*****************************************************************************************
 * Init function - creates task and Mutex.
 *****************************************************************************************/
@@ -62,7 +61,7 @@ void SineGenInit(void){
 /*****************************************************************************************
 * Public setter function to set frequency
 *****************************************************************************************/
-void SinewaveSetFreq(INT8U freq){
+void SinewaveSetFreq(INT16U freq){
     OS_ERR os_err;
     OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
     CurrentSpecs.frequency = freq;
@@ -71,26 +70,46 @@ void SinewaveSetFreq(INT8U freq){
 /*****************************************************************************************
 * Public setter function to set amplitude
 *****************************************************************************************/
-void SinewaveSetAmp(INT8U amp){
+void SinewaveSetLevel(INT8U level){
     OS_ERR os_err;
-
     OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    CurrentSpecs.amplitude = amp;
+    CurrentSpecs.level = level;
     OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
 }
 /*****************************************************************************************
-* Getter function for SW specs. Unfinished. Will change to a public getter and return
-* level/frequency
+* Getter function for frequency
+*****************************************************************************************/
+INT16U SineWaveGetFreq(void){
+    INT16U freq;
+    OS_ERR os_err;
+    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    freq = CurrentSpecs.frequency;
+    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    return freq;
+}
+/*****************************************************************************************
+* Getter function for level
+*****************************************************************************************/
+INT8U SineWaveGetLevel(void){
+    INT8U level;
+    OS_ERR os_err;
+    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    level = CurrentSpecs.level;
+    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    return level;
+}
+/*****************************************************************************************
+* Getter function for SW specs.
 *****************************************************************************************/
 static SINE_SPECS sineGetSpecs(void){
     SINE_SPECS current_specs;
     OS_ERR os_err;
-
     OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
     current_specs = CurrentSpecs;
     OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
     return current_specs;
 }
+
 
 /*****************************************************************************************
 * sineGenTask - unfinished. Will pend on DMA ISR, get current configurations, compute sine values
@@ -107,7 +126,7 @@ static void sineGenTask(void *p_arg){
     index = IndexPend();                        //pend on the DMA
     current_specs = sineGetSpecs();              //grab specs for calculation
     generated_values = arm_sin_q15(TS*current_specs.frequency);
-    generated_values *= current_specs.amplitude;
+    generated_values *= current_specs.level;
     //store in pp buffer
 }
 

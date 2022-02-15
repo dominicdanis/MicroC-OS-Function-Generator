@@ -2,7 +2,9 @@
 #define SINE_GENERATION_H_
 
 void SineGenInit(void);
-void SinewaveSetFreq(INT8U freq);
-void SinewaveSetAmp(INT8U amp);
+void SinewaveSetFreq(INT16U freq);
+void SinewaveSetLevel(INT8U level);
+INT16U SineWaveGetFreq(void);
+INT8U SineWaveGetLevel(void);
 
 #endif
