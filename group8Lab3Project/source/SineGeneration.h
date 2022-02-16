@@ -4,7 +4,7 @@
 void SineGenInit(void);
 void SinewaveSetFreq(INT16U freq);
 void SinewaveSetLevel(INT8U level);
-INT16U SineWaveGetFreq(void);
-INT8U SineWaveGetLevel(void);
+INT16U SinewaveGetFreq(void);
+INT8U SinewaveGetLevel(void);
 
 #endif
