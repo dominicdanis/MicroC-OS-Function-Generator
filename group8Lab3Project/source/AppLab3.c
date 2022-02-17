@@ -16,7 +16,11 @@
 #include "SineGeneration.h"
 #include "PulseTrain.h"
 #include "MemoryTools.h"
+<<<<<<< Upstream, based on origin/master
 #include "DMA.h"
+=======
+#include "uCOSTSI.h"
+>>>>>>> f907122 Touch sensors working, single touch not working.
 
 
 #define FREQ_LIMIT_HIGH 10000
@@ -25,12 +29,14 @@
 #define DEFAULT_FREQ 1000
 #define DEFAULT_LEVEL 10
 
-typedef enum {DEFAULT, SINEWAVE, PULSE_TRAIN} UI_STATES_T;
 
+typedef enum {DEFAULT, SINEWAVE, PULSE_TRAIN} UI_STATES_T;
+typedef enum {DOWN_LVL, UP_LVL} TSI_LEVEL_T;
 /*****************************************************************************************
  * Private Resources
  *****************************************************************************************/
 static UI_STATES_T UIState;								 /* UI state machine 	     	 */
+static TSI_LEVEL_T LevelChange;                        /* TSI level change             */
 static OS_MUTEX appUIStateKey;							 /* MUTEX key for the UIState    */
 
 /*****************************************************************************************
@@ -99,6 +105,7 @@ static void appStartTask(void *p_arg) {
 
 	OS_CPU_SysTickInitFreq(SYSTEM_CLOCK);
 	GpioDBugBitsInit();
+    GpioLED8Init();
 
 	OSMutexCreate(&appUIStateKey, "App UIState Mutex", &os_err);
 
@@ -132,7 +139,11 @@ static void appStartTask(void *p_arg) {
 
 	LcdInit();
 	KeyInit();
+<<<<<<< Upstream, based on origin/master
 	DMAInit();
+=======
+	tsiInit();
+>>>>>>> f907122 Touch sensors working, single touch not working.
 
 	if(0) {
 	//if(MemIsValid()) {
@@ -272,16 +283,46 @@ static void appProcessKeyTask(void *p_arg){
 * UI to edit the function generator level.
 * There are 21 linear levels from 0-20.
 * Pends on input from touch sensors.
+* 02/16/2022 Aili Emory
  *****************************************************************************************/
 static void appTouchSensorTask(void *p_arg){
 	OS_ERR os_err;
-	INT8C kchar;
+    INT8U level = 0;
+	INT16U sensor_state;
 	(void)p_arg;
 
 	while(1) {
-		DB0_TURN_OFF();                         	/* Turn off debug bit while waiting     */
-		kchar = KeyPend(0, &os_err);
-		DB0_TURN_ON();                          	/* Turn on debug bit while ready/running*/
-	}
+        sensor_state = tsiPend(0,&os_err);
+
+        if((sensor_state & (1<<BRD_PAD1_CH)) != 0){         /* Determine which pad is on*/
+            LevelChange = UP_LVL;
+        }
+        else if((sensor_state & (1<<BRD_PAD2_CH)) != 0){    /* Determine which pad is on*/
+            LevelChange = DOWN_LVL;
+        }
+        else{
+        }
+        switch(LevelChange){
+        case DOWN_LVL:
+            if(level == 0){
+                //do nothing, can't subtract
+            }
+            else{
+                level = level - 1;
+            }
+            break;
+        case UP_LVL:
+            if(level == 20){
+                //do nothing, can't add
+            }
+            else{
+                level = level + 1;
+            }
+            break;
+        default:
+            break;
+        }
+        LcdDispDecWord(1,9,LCD_LAYER_UI_STATE,(INT32U) level,2,LCD_DEC_MODE_LZ); /* Display level*/
+    }
 }
 
