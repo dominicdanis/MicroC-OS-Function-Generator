@@ -16,6 +16,7 @@
 #include "SineGeneration.h"
 #include "PulseTrain.h"
 #include "MemoryTools.h"
+#include "DMA.h"
 
 
 #define FREQ_LIMIT_HIGH 10000
@@ -131,6 +132,7 @@ static void appStartTask(void *p_arg) {
 
 	LcdInit();
 	KeyInit();
+	DMAInit();
 
 	if(0) {
 	//if(MemIsValid()) {
@@ -138,20 +140,18 @@ static void appStartTask(void *p_arg) {
 		//current_state = MemLoadState();
 		OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
 			UIState = current_state;
-		current_state = MemLoadState();
-		OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-			UIState = current_state;
+			//current_state = MemLoadState();
 		OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
 
 		if(current_state == PULSE_TRAIN) {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)PulseTrainGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
+			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
 		} else {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)SinewaveGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
+			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
 		}
 	} else {
@@ -256,12 +256,12 @@ static void appProcessKeyTask(void *p_arg){
 		if(current_state == PULSE_TRAIN) {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)PulseTrainGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
+			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
 		} else {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)SinewaveGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
+			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
 		}
 	}
