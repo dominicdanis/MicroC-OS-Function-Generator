@@ -29,14 +29,11 @@
 #define DEFAULT_FREQ 1000
 #define DEFAULT_LEVEL 10
 
-
 typedef enum {DEFAULT, SINEWAVE, PULSE_TRAIN} UI_STATES_T;
-typedef enum {DOWN_LVL, UP_LVL} TSI_LEVEL_T;
 /*****************************************************************************************
  * Private Resources
  *****************************************************************************************/
 static UI_STATES_T UIState;								 /* UI state machine 	     	 */
-static TSI_LEVEL_T LevelChange;                        /* TSI level change             */
 static OS_MUTEX appUIStateKey;							 /* MUTEX key for the UIState    */
 
 /*****************************************************************************************
@@ -105,7 +102,6 @@ static void appStartTask(void *p_arg) {
 
 	OS_CPU_SysTickInitFreq(SYSTEM_CLOCK);
 	GpioDBugBitsInit();
-    GpioLED8Init();
 
 	OSMutexCreate(&appUIStateKey, "App UIState Mutex", &os_err);
 
@@ -140,10 +136,14 @@ static void appStartTask(void *p_arg) {
 	LcdInit();
 	KeyInit();
 <<<<<<< Upstream, based on origin/master
+<<<<<<< Upstream, based on origin/master
 	DMAInit();
 =======
 	tsiInit();
 >>>>>>> f907122 Touch sensors working, single touch not working.
+=======
+	TSIInit();
+>>>>>>> 68d3ca1 TSI Touch Sensors working.
 
 	if(0) {
 	//if(MemIsValid()) {
@@ -169,6 +169,8 @@ static void appStartTask(void *p_arg) {
 		UIState = DEFAULT;
 		PulseTrainSetFreq(DEFAULT_FREQ);
 		PulseTrainSetLevel(DEFAULT_LEVEL);
+		SinewaveSetFreq(DEFAULT_FREQ);
+		SinewaveSetLevel(DEFAULT_LEVEL);
 		LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
 		LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)DEFAULT_FREQ, 4, LCD_DEC_MODE_AL);
 		LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
@@ -277,7 +279,6 @@ static void appProcessKeyTask(void *p_arg){
 		}
 	}
 }
-
 /*****************************************************************************************
 * appTouchSensorTask
 * UI to edit the function generator level.
@@ -286,43 +287,56 @@ static void appProcessKeyTask(void *p_arg){
 * 02/16/2022 Aili Emory
  *****************************************************************************************/
 static void appTouchSensorTask(void *p_arg){
-	OS_ERR os_err;
-    INT8U level = 0;
-	INT16U sensor_state;
-	(void)p_arg;
+    OS_FLAGS cur_sense_flags;
+    UI_STATES_T current_state;
+    INT8U level;
+    OS_ERR os_err;
+    (void)p_arg;
 
-	while(1) {
-        sensor_state = tsiPend(0,&os_err);
-
-        if((sensor_state & (1<<BRD_PAD1_CH)) != 0){         /* Determine which pad is on*/
-            LevelChange = UP_LVL;
+    while(1){
+        cur_sense_flags = TSIPend(100,&os_err);
+        if(os_err == OS_ERR_TIMEOUT){
+            cur_sense_flags = 0;
+        }else{
         }
-        else if((sensor_state & (1<<BRD_PAD2_CH)) != 0){    /* Determine which pad is on*/
-            LevelChange = DOWN_LVL;
+        OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+            current_state = UIState;                                            /* Determine Current State */
+        OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
+
+        if(current_state == SINEWAVE){
+            level = SinewaveGetLevel();
+        }
+        else{
+            level = PulseTrainGetLevel();
+        }
+        if((cur_sense_flags & (1<<BRD_PAD1_CH)) != 0){                          /* Increment Level */
+            if(level == 20){
+                //do nothing
+            }
+            else{
+                level = level +1;
+            }
         }
         else{
         }
-        switch(LevelChange){
-        case DOWN_LVL:
+        if((cur_sense_flags & (1<<BRD_PAD2_CH)) != 0){                          /* Decrement Level */
             if(level == 0){
-                //do nothing, can't subtract
+                //do nothing
             }
             else{
-                level = level - 1;
+                level = level -1;
             }
-            break;
-        case UP_LVL:
-            if(level == 20){
-                //do nothing, can't add
-            }
-            else{
-                level = level + 1;
-            }
-            break;
-        default:
-            break;
         }
-        LcdDispDecWord(1,9,LCD_LAYER_UI_STATE,(INT32U) level,2,LCD_DEC_MODE_LZ); /* Display level*/
+        else{
+        }
+        if(current_state == SINEWAVE){                                          /* Set Level, Display value */
+            SinewaveSetLevel(level);
+            LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
+        }
+        else{
+            PulseTrainSetLevel(level);
+            LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
+        }
+        SaveLevel(level);                                                       /* Save Level to EEPROM */
     }
 }
-

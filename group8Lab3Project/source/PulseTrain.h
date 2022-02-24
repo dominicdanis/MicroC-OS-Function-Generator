@@ -1,5 +1,4 @@
-/*
- * PulseTrain.h
+/*PulseTrain.h
  * 02/15/2022 Nick Coyle, Dominic Danis, Aili Emory
  */
 

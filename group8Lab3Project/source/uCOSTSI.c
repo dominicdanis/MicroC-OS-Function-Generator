@@ -1,8 +1,6 @@
 /*******************************************************************************
  * uCOS TSI Module
- * Contains single task, which pends on a time delay of 5ms.
- * This module is not complete. Code must be written
- * to post a semaphore only when there is a sensor state change.
+ * Contains single task,
  * 02/17/2022 Aili Emory
  *******************************************************************************/
 #include "os.h"     /*Header files: Dependencies*/
@@ -11,16 +9,14 @@
 #include "uCOSTSI.h"
 #include "k65TWR_GPIO.h"
 
-typedef enum {PROC1START2, PROC2START1} TSI_TASK_STATE_T;
+typedef enum {T_ON, T_OFF} T_STATE;
 typedef struct{
     INT16U baseline;
     INT16U offset;
     INT16U threshold;
+    T_STATE state;
 }TOUCH_LEVEL_T;
-typedef struct{             /*Synchronous Buffer*/
-    INT16U buffer;
-    OS_SEM flag;
-}TSI_BUFFER;
+static OS_FLAG_GRP tsiFlags;
 /**********************************************************************************
 * Allocate task control block
 **********************************************************************************/
@@ -41,15 +37,12 @@ static void tsiStartScan(INT8U channel);
 static void tsiProcScan(INT8U channel);
 static void tsiChCalibration(INT8U channel);
 static void tsiTask(void *p_arg);
-static TSI_BUFFER tsiBuffer;
-
-static INT16U tsiSensorFlags = 0;
 
 /********************************************************************************
  * K65TWR_TSI0Init: Initializes TSI0 module
  * -Public
  ********************************************************************************/
-void tsiInit(void){
+void TSIInit(void){
     OS_ERR os_err;
 
     SIM->SCGC5 |= SIM_SCGC5_TSI(1);         /*Turn on clock to TSI module*/
@@ -69,8 +62,7 @@ void tsiInit(void){
     tsiChCalibration(BRD_PAD1_CH);
     tsiChCalibration(BRD_PAD2_CH);
 
-    tsiBuffer.buffer = 0x00;           /*Initialize the TSI Buffer and semaphore*/
-    OSSemCreate(&(tsiBuffer.flag),"TSI Semaphore",0,&os_err);
+    OSFlagCreate(&tsiFlags,"TSI FLags",0,&os_err);
 
     OSTaskCreate((OS_TCB     *)&tsiTaskTCB,         /*Create the TSI task*/
                 (CPU_CHAR   *)"uCOS TSI Task",
@@ -93,12 +85,12 @@ void tsiInit(void){
 * -Private
  ********************************************************************************/
 static void tsiChCalibration(INT8U channel){
-        tsiStartScan(channel);
-        while((TSI0->GENCS & TSI_GENCS_EOSF_MASK) == 0){} //wait for scan to finish
-        TSI0->GENCS |= TSI_GENCS_EOSF(1);    //Clear flag
-        tsiSensorLevels[channel].baseline = (INT16U)(TSI0->DATA & TSI_DATA_TSICNT_MASK);
-        tsiSensorLevels[channel].threshold = tsiSensorLevels[channel].baseline +
-                                             tsiSensorLevels[channel].offset;
+    tsiStartScan(channel);
+    while((TSI0->GENCS & TSI_GENCS_EOSF_MASK) == 0){} //wait for scan to finish
+    TSI0->GENCS |= TSI_GENCS_EOSF(1);    //Clear flag
+    tsiSensorLevels[channel].baseline = (INT16U)(TSI0->DATA & TSI_DATA_TSICNT_MASK);
+    tsiSensorLevels[channel].threshold = tsiSensorLevels[channel].baseline +
+                                         tsiSensorLevels[channel].offset;
 }
 /********************************************************************************
 * tsiTask: uCOS Task
@@ -110,28 +102,15 @@ static void tsiChCalibration(INT8U channel){
   ********************************************************************************/
 static void tsiTask(void *p_arg){
     OS_ERR os_err;
-    TSI_TASK_STATE_T tsiTaskState = PROC1START2;
     (void)p_arg;
 
     while(1){
-    OSTimeDly(5,OS_OPT_TIME_PERIODIC,&os_err);
-
-    tsiStartScan(BRD_PAD1_CH);
-        switch(tsiTaskState){
-        case PROC1START2:
-            tsiProcScan(BRD_PAD1_CH);
-            tsiStartScan(BRD_PAD2_CH);
-            tsiTaskState = PROC2START1;
-            break;
-        case PROC2START1:
-            tsiProcScan(BRD_PAD2_CH);
-            tsiStartScan(BRD_PAD1_CH);
-            tsiTaskState = PROC1START2;
-            break;
-        default:
-            tsiTaskState = PROC1START2;
-            break;
-        }
+        tsiStartScan(BRD_PAD1_CH);
+        OSTimeDly(6,OS_OPT_TIME_PERIODIC,&os_err);
+        tsiProcScan(BRD_PAD1_CH);
+        tsiStartScan(BRD_PAD2_CH);
+        OSTimeDly(6,OS_OPT_TIME_PERIODIC,&os_err);
+        tsiProcScan(BRD_PAD2_CH);
     }
 }
 /********************************************************************************
@@ -151,16 +130,25 @@ static void tsiStartScan(INT8U channel){
 * -Private
  ********************************************************************************/
 static void tsiProcScan(INT8U channel){
+    INT16U tsi_touch_count;
+    T_STATE cur_state;
     OS_ERR os_err;
     while((TSI0->GENCS & TSI_GENCS_EOSF_MASK) == 0){}
-    TSI0->GENCS |= TSI_GENCS_EOSF(1);                   /*Clear flag*/
-
-    if((INT16U)(TSI0->DATA & TSI_DATA_TSICNT_MASK) > tsiSensorLevels[channel].threshold){  /* Process channel */
-        tsiSensorFlags |= (INT16U)(1<<channel);
-        tsiBuffer.buffer = tsiSensorFlags;
-        (void)OSSemPost(&(tsiBuffer.flag), OS_OPT_POST_1, &os_err);   /* Signal new data in buffer */
-    }else{
-    }
+        TSI0->GENCS |= TSI_GENCS_EOSF(1); //Clear flag
+        tsi_touch_count = (TSI0->DATA & TSI_DATA_TSICNT_MASK);
+        if((tsi_touch_count > tsiSensorLevels[channel].threshold)){
+            cur_state = T_ON;
+        }else{
+            cur_state = T_OFF;
+        }
+        if((cur_state == T_ON) && (tsiSensorLevels[channel].state == T_OFF)){
+            (void)OSFlagPost(&tsiFlags,
+                    (OS_FLAGS)(1<<channel),OS_OPT_POST_FLAG_SET, &os_err);
+            tsiSensorLevels[channel].state = T_ON;
+        }else if(cur_state == T_OFF){
+            tsiSensorLevels[channel].state = T_OFF;
+        }else{
+     }
 }
 /********************************************************************
 * TSIPend(): A function to provide access to the TSI buffer via a
@@ -168,8 +156,8 @@ static void tsiProcScan(INT8U channel){
 *            receive sensor press only one time.
 * - Public
 ********************************************************************/
-INT16U tsiPend(INT16U tout, OS_ERR *os_err){
-    OSSemPend(&(tsiBuffer.flag),tout, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, os_err);
-    tsiSensorFlags = 0;
-    return(tsiBuffer.buffer);
+OS_FLAGS TSIPend(OS_TICK tout, OS_ERR *os_err){
+    OS_FLAGS sflags;
+    sflags = OSFlagPend (&tsiFlags, 0xFFFF,tout,OS_OPT_PEND_FLAG_SET_ANY + OS_OPT_PEND_FLAG_CONSUME,(void *)0,os_err);
+    return sflags;
 }
