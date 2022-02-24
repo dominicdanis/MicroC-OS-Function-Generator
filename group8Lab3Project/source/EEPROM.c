@@ -18,6 +18,8 @@
  *
  *  49 bits total.
  *
+ *  Idea - the levels and interface can be merged into 1 16 bit block.
+ *
  *  to check if the startup is valid we will do a checksum and see if it's above a max value
  *
  *  need functions for reading and writing
