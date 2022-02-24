@@ -22,25 +22,24 @@ typedef struct{
 * Public Functions Declarations
 *******************************************************************************************/
 void DMA2_DMA18_IRQHandler(void);
-void PIT0_IRQHandler(void); /* PIT interrupt service routine*/
 
 /*******************************************************************************************
 * Private Functions Declarations
 *******************************************************************************************/
-DMA_BLOCK_RDY dmaBlockRdy;
+static void DAC0Init(void);  /* Initialize the Digital to Analog Converter */
+static void PitInit(void);	 /* Initialize the Periodic Interrupt Timer */
 
-static void DAC0Init(void);  /* Init the DAC */
-static void PitInit(void);
+/****************************************************************************************
+* Private Resources
+****************************************************************************************/
+static DMA_BLOCK_RDY dmaBlockRdy;
 
 /*******************************************************************************************
-* Global Variables
+* Ping Pong Buffer (Private)
 *******************************************************************************************/
-/* Right now these are global buffers so the processing module can access them. Should
- * replace with a function. TDM 08/30/2015
- */
-// The following structure matches the DMA order, and is sized to implement
-// full double-buffering (ping-pong).
-INT16U DMABuffer[1][SAMPLES_PER_BLOCK] =  {{2047,
+// This is the Ping Pong Buffer, full double-buffering (ping-pong).
+// Should only be accessible externally via DMAFillBuffer()
+static INT16U DMABuffer[1][SAMPLES_PER_BLOCK] =  {{2047,
 		2059,
 		2072,
 		2084,
@@ -1067,8 +1066,14 @@ INT16U DMABuffer[1][SAMPLES_PER_BLOCK] =  {{2047,
 }};
 
 /*******************************************************************************************
-* Function Code
-********************************************************************************************
+* DMAFillBuffer
+* Fills the DMA ping pong buffer
+*******************************************************************************************/
+void DMAFillBuffer(INT8U index, INT16U sample) {
+
+}
+
+/*******************************************************************************************
 DMAInInit
     Initializes DMA for an input stream from ADC0 to ping-pong buffers
     Parameters: none
@@ -1140,6 +1145,17 @@ void DMAInit(void){
 }
 
 /***********************************************************************
+ * DAC0Init - Initialize DAC0 and set output reference (3.3V)
+ * Nick Coyle 11/13/2021
+ ************************************************************************/
+static void DAC0Init(void){
+    SIM->SCGC2 |= SIM_SCGC2_DAC0(1);  /* enable DAC clock */
+    DAC0->C0 |= DAC_C0_DACEN(1);      /* set bit 7 to enable DAC */
+    DAC0->C0 |= DAC_C0_DACRFS(1);     /* set bit 6 for DACREF_1 so VDDA 3.3V ref */
+    DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 5 select software trigger */
+}
+
+/***********************************************************************
  * PitInit - Initialize the PIT
  * Todd Morton 11/09/2020
  * Nick Coyle 11/13/2021 revised the comments
@@ -1153,17 +1169,6 @@ static void PitInit(void){
     PIT->MCR = PIT_MCR_MDIS(0);        /* enable PIT clock */
     PIT->CHANNEL[0].LDVAL = 1249;      /* set Tep to 20.083us for fs=48kHz (Buss clock = 60MHz) */
     PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TIE(1)|PIT_TCTRL_TEN(1)); /* enable interrupts, start Timer 0 */
-}
-
-/***********************************************************************
- * DAC0Init - Initialize DAC0 and set output reference (3.3V)
- * Nick Coyle 11/13/2021
- ************************************************************************/
-static void DAC0Init(void){
-    SIM->SCGC2 |= SIM_SCGC2_DAC0(1);  /* enable DAC clock */
-    DAC0->C0 |= DAC_C0_DACEN(1);      /* set bit 7 to enable DAC */
-    DAC0->C0 |= DAC_C0_DACRFS(1);     /* set bit 6 for DACREF_1 so VDDA 3.3V ref */
-    DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 5 select software trigger */
 }
 
 /****************************************************************************************
@@ -1184,8 +1189,12 @@ void DMA2_DMA18_IRQHandler(void){
     DB2_TURN_OFF();
     OSIntExit();
 }
+
 /****************************************************************************************
  * DMA Flag
+ * The DMA ISR is going to post this semaphore every time it gets halfway or all the way
+ * to the end of the ping pong buffer. The sinegen buffer filling task will call this to
+ * get the current index it should be writing to.
  * 08/30/2015 TDM
  ***************************************************************************************/
 INT8U DMAPend(OS_TICK tout, OS_ERR *os_err_ptr){
