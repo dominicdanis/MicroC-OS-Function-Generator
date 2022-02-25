@@ -16,11 +16,8 @@
 #include "SineGeneration.h"
 #include "PulseTrain.h"
 #include "MemoryTools.h"
-<<<<<<< Upstream, based on origin/master
 #include "DMA.h"
-=======
 #include "uCOSTSI.h"
->>>>>>> f907122 Touch sensors working, single touch not working.
 
 
 #define FREQ_LIMIT_HIGH 10000
@@ -135,15 +132,8 @@ static void appStartTask(void *p_arg) {
 
 	LcdInit();
 	KeyInit();
-<<<<<<< Upstream, based on origin/master
-<<<<<<< Upstream, based on origin/master
 	DMAInit();
-=======
-	tsiInit();
->>>>>>> f907122 Touch sensors working, single touch not working.
-=======
 	TSIInit();
->>>>>>> 68d3ca1 TSI Touch Sensors working.
 
 	if(0) {
 	//if(MemIsValid()) {
@@ -337,6 +327,6 @@ static void appTouchSensorTask(void *p_arg){
             PulseTrainSetLevel(level);
             LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
         }
-        SaveLevel(level);                                                       /* Save Level to EEPROM */
+        //SaveLevel(level);                                                       /* Save Level to EEPROM */
     }
 }
