@@ -48,10 +48,11 @@
 #define APP_CFG_START_TASK_PRIO              2u
 #define APP_CFG_LCD_TASK_PRIO		         8u
 #define APP_CFG_APP_PROCESS_KEY_TASK_PRIO    10u
-#define APP_CFG_APP_TOUCH_SENSOR_TASK_PRIO   11u
-#define APP_CFG_KEY_TASK_PRIO		         12u
-#define APP_CFG_PULSETRAIN_TASK_PRIO         15u
-#define APP_CFG_SINEGEN_TASK_PRIO            16u
+#define APP_CFG_TSI_TASK_PRIO                11U
+#define APP_CFG_APP_TOUCH_SENSOR_TASK_PRIO   12u
+#define APP_CFG_KEY_TASK_PRIO		         15u
+#define APP_CFG_PULSETRAIN_TASK_PRIO         16u
+#define APP_CFG_SINEGEN_TASK_PRIO            17u
 
 
 /*
@@ -67,5 +68,6 @@
 #define APP_CFG_KEY_TASK_STK_SIZE   					128u
 #define APP_CFG_SINEGEN_TASK_STK_SIZE                   128u
 #define APP_CFG_PULSETRAIN_TASK_STK_SIZE				128u
+#define APP_CFG_TSI_TASK_STK_SIZE                       128u
 
 #endif

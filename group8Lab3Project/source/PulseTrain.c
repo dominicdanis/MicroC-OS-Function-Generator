@@ -1,5 +1,4 @@
-/*
- * PulseTrain.h
+/*PulseTrain.h
  * 02/15/2022 Nick Coyle, Dominic Danis, Aili Emory
  */
 
@@ -19,11 +18,11 @@ static CPU_STK pulseTrainTaskStk[APP_CFG_PULSETRAIN_TASK_STK_SIZE];
 typedef struct{
     INT16U frequency;
     INT8U level;
-}SINE_SPECS;
+}PULSE_TRAIN_SPECS;
 /****************************************************************************************
 * Private Resources
 ****************************************************************************************/
-static SINE_SPECS CurrentSpecs;
+static PULSE_TRAIN_SPECS CurrentSpecs;
 static OS_MUTEX PulseTrainMutexKey;
 /*****************************************************************************************
 * Task Function Prototypes.
@@ -32,7 +31,7 @@ static void pulseTrainTask(void *p_arg);
 /*****************************************************************************************
 * Private Function Prototypes
 *****************************************************************************************/
-static SINE_SPECS pulseTrainGetSpecs(void);
+static PULSE_TRAIN_SPECS pulseTrainGetSpecs(void);
 /*****************************************************************************************
 * Init function - creates task and Mutex.
 *****************************************************************************************/
@@ -58,14 +57,18 @@ void PulseTrainInit(void){
 *****************************************************************************************/
 void PulseTrainSetFreq(INT16U freq){
     OS_ERR os_err;
-
+    OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    CurrentSpecs.frequency = freq;
+    OSMutexPost(&PulseTrainMutexKey, OS_OPT_POST_NONE, &os_err);
 }
 /*****************************************************************************************
 * Public setter function to set amplitude
 *****************************************************************************************/
 void PulseTrainSetLevel(INT8U level){
     OS_ERR os_err;
-
+    OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    CurrentSpecs.level = level;
+    OSMutexPost(&PulseTrainMutexKey, OS_OPT_POST_NONE, &os_err);
 }
 /*****************************************************************************************
 * Getter function for frequency
@@ -73,7 +76,9 @@ void PulseTrainSetLevel(INT8U level){
 INT16U PulseTrainGetFreq(void){
     INT16U freq;
     OS_ERR os_err;
-   freq=0;
+    OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    freq = CurrentSpecs.frequency;
+    OSMutexPost(&PulseTrainMutexKey, OS_OPT_POST_NONE, &os_err);
     return freq;
 }
 /*****************************************************************************************
@@ -82,30 +87,28 @@ INT16U PulseTrainGetFreq(void){
 INT8U PulseTrainGetLevel(void){
     INT8U level;
     OS_ERR os_err;
-   level=0;
+    OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    level = CurrentSpecs.level;
+    OSMutexPost(&PulseTrainMutexKey, OS_OPT_POST_NONE, &os_err);
     return level;
 }
 /*****************************************************************************************
 * Getter function for PulseTrain specs.
 *****************************************************************************************/
-static SINE_SPECS pulseTrainGetSpecs(void){
-    SINE_SPECS current_specs;
+static PULSE_TRAIN_SPECS pulseTrainGetSpecs(void){
+    PULSE_TRAIN_SPECS current_specs;
     OS_ERR os_err;
 
     return current_specs;
 }
-
-
 /*****************************************************************************************
 *
 *****************************************************************************************/
 static void pulseTrainTask(void *p_arg){
-    INT32U index;                               //These variable may change as sine math gets worked out
-    SINE_SPECS current_specs;
+    INT32U index;                               //These variable may change as pulse train math gets worked out
+    PULSE_TRAIN_SPECS current_specs;
     INT32S generated_values;
     INT8U scaled_freq;
     OS_ERR os_err;
     (void)p_arg;
-
-
 }
