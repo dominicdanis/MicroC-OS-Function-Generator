@@ -134,6 +134,7 @@ static void appStartTask(void *p_arg) {
 	KeyInit();
 	DMAInit();
 	TSIInit();
+	EEPROMInit();
 
 	if(0) {
 	//if(MemIsValid()) {
@@ -143,7 +144,6 @@ static void appStartTask(void *p_arg) {
 			UIState = current_state;
 			//current_state = MemLoadState();
 		OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
-
 		if(current_state == PULSE_TRAIN) {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)PulseTrainGetFreq(), 5, LCD_DEC_MODE_AL);
