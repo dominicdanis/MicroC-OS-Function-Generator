@@ -136,6 +136,7 @@ static void appStartTask(void *p_arg) {
 	EEPROMInit();
 	SineGenInit();
 	PulseTrainInit();
+	SineGenInit();
 
     loaded_state = EEPROMGetConfig();
     if(loaded_state.state==0){
