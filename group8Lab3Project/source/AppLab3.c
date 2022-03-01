@@ -18,6 +18,7 @@
 #include "MemoryTools.h"
 #include "DMA.h"
 #include "uCOSTSI.h"
+#include "EEPROM.h"
 
 
 #define FREQ_LIMIT_HIGH 10000
@@ -93,7 +94,7 @@ void main(void) {
  *****************************************************************************************/
 static void appStartTask(void *p_arg) {
 	OS_ERR os_err;
-	UI_STATES_T current_state;
+	SAVED_CONFIG loaded_state;
 
 	(void)p_arg;                       				/* Avoid compiler warning for unused variable   */
 
@@ -136,26 +137,30 @@ static void appStartTask(void *p_arg) {
 	TSIInit();
 	EEPROMInit();
 
-	if(0) {
+	if(1) {
 	//if(MemIsValid()) {
 		// read values from EEPROM
 		//current_state = MemLoadState();
+	    loaded_state = EEPROMGetConfig();
 		OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-			UIState = current_state;
-			//current_state = MemLoadState();
+			UIState = loaded_state.state;
 		OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
-		if(current_state == PULSE_TRAIN) {
+		SinewaveSetLevel(loaded_state.sine_level);
+		SinewaveSetFreq(loaded_state.sine_freq);
+		PulseTrainSetLevel(loaded_state.pulse_level);
+		PulseTrainSetFreq(loaded_state.pulse_freq);
+		if(loaded_state.state == PULSE_TRAIN) {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)PulseTrainGetFreq(), 5, LCD_DEC_MODE_AL);
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)loaded_state.pulse_freq, 5, LCD_DEC_MODE_AL);
 			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)loaded_state.pulse_level, 2, LCD_DEC_MODE_AL);
 		} else {
 			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)SinewaveGetFreq(), 5, LCD_DEC_MODE_AL);
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)loaded_state.sine_freq, 5, LCD_DEC_MODE_AL);
 			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)loaded_state.sine_level, 2, LCD_DEC_MODE_AL);
 		}
-	} else {
+	} /*else {
 		UIState = DEFAULT;
 		PulseTrainSetFreq(DEFAULT_FREQ);
 		PulseTrainSetLevel(DEFAULT_LEVEL);
@@ -166,7 +171,7 @@ static void appStartTask(void *p_arg) {
 		LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz");
 		LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)DEFAULT_LEVEL, 2, LCD_DEC_MODE_AL);
 	}
-
+    */
 	OSTaskDel((OS_TCB *)0, &os_err);
 }
 
@@ -327,6 +332,5 @@ static void appTouchSensorTask(void *p_arg){
             PulseTrainSetLevel(level);
             LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
         }
-        //SaveLevel(level);                                                       /* Save Level to EEPROM */
     }
 }

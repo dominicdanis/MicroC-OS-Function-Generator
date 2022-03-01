@@ -9,35 +9,28 @@
 #include "MemoryTools.h"
 #include "os.h"
 
-/*
- *  5 bits for each level
- *  14 bits for each frequency
- *  1 bit for interface
- *
- *  39 bits total
- * */
 #define SET_MASK 0xFFFF
 #define STATE_MASK 0x20
 #define PULSE_L_MASK 0x7C0
 #define SINE_L_MASK 0xF800
 #define ADDR1 0x1
-#define ADDR2 0x2
-#define ADDR3 0x3
+#define ADDR2 0x20
+#define ADDR3 0x40
 #define EWEN 0x04C0
 #define EWDS 0x0400
 #define ERAL 0x0480
 
-/*  CurrentOutput is 3 INT16Us composed of
- *  CurrentOutput[0] = SineFreq
- *  CurrentOutput[1] = PulseFreq
- *  CurrentOutput[2] = (15:11 - SineLevel), (10:6 - Pulse Level), (5 - current interface) (4:0 - unassigned)
- * */
-static INT16U CurrentOutput[3];
-static INT8U validateConfig(SAVED_CONFIG);
 static void EEPROMCmd(INT16U cmd);
 static INT16U EEPROMRead(INT8U addr);
 static void EEPROMWrite(INT8U addr, INT16U wr_data);
 static INT16U EEPROMXfr16(INT32U pushr);
+
+typedef union{
+    SAVED_CONFIG Config;
+    INT16U ConfigArr[(sizeof(SAVED_CONFIG)+1)/2];
+} EEPROMBLOCK;
+
+EEPROMBLOCK EEPROMCurrent;
 
 void EEPROMInit(void){
     //Clocks and connecting pins
@@ -57,73 +50,26 @@ void EEPROMInit(void){
     //Controller with transfer FIFOs disabled
     SPI2->MCR = SPI_MCR_MSTR(1)|SPI_MCR_DIS_TXF(1)|SPI_MCR_DIS_RXF(1);
 
-    SAVED_CONFIG config;
-    config.pulse_freq = 0;
-    config = EEPROMGetConfig();
-    EEPROMSaveSineFreq(0);
-    config = EEPROMGetConfig();
-    EEPROMSaveSineFreq(1234);
-
 }
-
-void EEPROMSaveState(INT8U state){
+void EEPROMSaveConfig(SAVED_CONFIG current){
     OS_ERR os_err;
-
-    CurrentOutput[2] &= (SET_MASK & (state>>5));
+    INT8U addr = 0;
+    EEPROMCurrent.Config = current;
     EEPROMCmd(EWEN);
-    EEPROMWrite(ADDR3,CurrentOutput[2]);
-    OSTimeDly(6,OS_OPT_TIME_DLY,&os_err);
-    EEPROMCmd(EWDS);
-}
-void EEPROMSaveSineFreq(INT16U sine_freq){
-    OS_ERR os_err;
-
-    CurrentOutput[0] = sine_freq;
-    EEPROMCmd(EWEN);
-    EEPROMWrite(ADDR1,CurrentOutput[0]);
-    OSTimeDly(6,OS_OPT_TIME_DLY,&os_err);
-    EEPROMCmd(EWDS);
-}
-void EEPROMSaveSineLevel(INT8U sine_level){
-    OS_ERR os_err;
-
-    CurrentOutput[2] &= (SET_MASK & (sine_level>>11));
-    EEPROMCmd(EWEN);
-    EEPROMWrite(ADDR3,CurrentOutput[2]);
-    OSTimeDly(6,OS_OPT_TIME_DLY,&os_err);
-    EEPROMCmd(EWDS);
-}
-void EEPROMSavePulseFreq(INT16U pulse_freq){
-    OS_ERR os_err;
-
-    CurrentOutput[1] = pulse_freq;
-    EEPROMCmd(EWEN);
-    EEPROMWrite(ADDR2,CurrentOutput[1]);
-    OSTimeDly(6,OS_OPT_TIME_DLY,&os_err);
-    EEPROMCmd(EWDS);
-}
-void EEPROMSavePulseLevel(INT8U pulse_level){
-    OS_ERR os_err;
-
-    CurrentOutput[2] &= (SET_MASK & (pulse_level>>6));
-    EEPROMCmd(EWEN);
-    EEPROMWrite(ADDR3,CurrentOutput[2]);
-    OSTimeDly(6,OS_OPT_TIME_DLY,&os_err);
+    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){
+        EEPROMWrite(addr,EEPROMCurrent.ConfigArr[increment]);
+        addr++;
+        OSTimeDly(7,OS_OPT_TIME_DLY,&os_err);
+    }
     EEPROMCmd(EWDS);
 }
 
 SAVED_CONFIG EEPROMGetConfig(void){
-    SAVED_CONFIG current;
-    CurrentOutput[0] = EEPROMRead(ADDR1);
-    CurrentOutput[1] = EEPROMRead(ADDR2);
-    CurrentOutput[2] = EEPROMRead(ADDR3);
-    current.sine_freq = CurrentOutput[0];
-    current.pulse_freq = CurrentOutput[1];
-    current.state = (INT8U)(CurrentOutput[2] & STATE_MASK);
-    current.pulse_level = (INT8U)(CurrentOutput[2] & PULSE_L_MASK);
-    current.sine_level = (INT8U)(CurrentOutput[2] & SINE_L_MASK);
-    //validate stuff
-    return current;
+    INT8U addr = 0;
+    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){
+        EEPROMCurrent.ConfigArr[increment] = EEPROMRead(addr);
+    }
+    return EEPROMCurrent.Config;
 }
 
 static INT16U EEPROMRead(INT8U addr){
