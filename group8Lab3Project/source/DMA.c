@@ -39,7 +39,7 @@ static DMA_BLOCK_RDY dmaBlockRdy;
 *******************************************************************************************/
 // This is the Ping Pong Buffer, full double-buffering (ping-pong).
 // Should only be accessible externally via DMAFillBuffer()
-static INT16U dmaBuffer[NUM_BLOCKS][SAMPLES_PER_BLOCK];
+INT16U dmaBuffer[NUM_BLOCKS][SAMPLES_PER_BLOCK];
 
 /*******************************************************************************************
 * DMAFillBuffer

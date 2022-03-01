@@ -1155,7 +1155,7 @@ static void sineGenTask(void *p_arg){
     while(1) {
 		index = DMAReadyPend(0, &os_err);            //pend on the DMA
 		current_specs = sineGetSpecs();              //grab specs for calculation
-		generated_values = arm_sin_q15(TS*current_specs.frequency);
+		//generated_values = arm_sin_q15(TS*current_specs.frequency);
 		generated_values *= current_specs.level;
 		//store in pp buffer
 		DMAFillBuffer(index, &SampleBuffer);
