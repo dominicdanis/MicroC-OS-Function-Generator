@@ -1,10 +1,9 @@
 /*******************************************************************************
- * EECE344 Lab 2 Code
- *   MemoryTools.c is a module with a public function used to return the checksum
- *   of 2 memory addresses
- *
- * Nick Coyle, 10/11/2021
- *******************************************************************************/
+* EECE444 Lab 3 Code
+*   MemoryTools.c is a module containing memory interface and validation
+*
+* 01/25/2022 Nick Coyle
+*******************************************************************************/
 #include "MCUType.h"               /* Include header files                    */
 #include "MemoryTools.h"
 
@@ -22,6 +21,6 @@ INT16U MemChkSum(INT8U *startaddr, INT8U *endaddr) {
         start++;
     }
     chk_sum += (INT16U)*start;            /* get the last byte outside the loop to prevent terminal count bug */
-
     return chk_sum;
 }
+
