@@ -131,6 +131,7 @@ static void appStartTask(void *p_arg) {
 
 	LcdInit();
 	KeyInit();
+	SineGenInit();
 	DMAInit();
 	TSIInit();
 	EEPROMInit();

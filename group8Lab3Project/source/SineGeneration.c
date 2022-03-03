@@ -14,6 +14,8 @@
 
 #define TS 44739
 
+static INT32U sine_vals[SAMPLES_PER_BLOCK];
+
 static INT16U SampleBuffer[SAMPLES_PER_BLOCK] =  {2047,
 		2059,
 		2072,
@@ -1145,19 +1147,35 @@ static SINE_SPECS sineGetSpecs(void){
 * store in PP buffer
 *****************************************************************************************/
 static void sineGenTask(void *p_arg){
-    INT8U index;                               //These variable may change as sine math gets worked out
-    SINE_SPECS current_specs;
-    INT32S generated_values;
-    INT8U scaled_freq;
+	INT32U argument = 0;
+	INT8U index = 0;
+
+	INT16U frequency;
+	INT8U level;
     OS_ERR os_err;
     (void)p_arg;
 
     while(1) {
-		index = DMAReadyPend(0, &os_err);            //pend on the DMA
-		current_specs = sineGetSpecs();              //grab specs for calculation
-		//generated_values = arm_sin_q15(TS*current_specs.frequency);
-		generated_values *= current_specs.level;
-		//store in pp buffer
-		DMAFillBuffer(index, &SampleBuffer);
+    	index = DMAReadyPend(0, &os_err);            //pend on the DMA
+    	frequency = SinewaveGetFreq();
+    	level = SinewaveGetLevel();
+
+    	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
+    	   //sine_vals[i] = 2047+((arm_sin_q31(argument))>>20);
+    		sine_vals[i] = arm_sin_q31(argument);
+    	   /*
+    	   for(INT8U j=0; j<level; j++){
+    	      sine_vals[i] = sine_vals[i] + sine_vals[i];
+    	   }
+    	   */
+    	   if(i%47==0){
+    		   argument = 0;
+    	   }
+    	   else{
+    		   argument += (TS*frequency);
+    	   }
+    	}
+    	argument = 0;
+    	DMAFillBuffer(index, sine_vals);
     }
 }
