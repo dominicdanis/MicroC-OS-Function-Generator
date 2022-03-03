@@ -1,10 +1,8 @@
 /*******************************************************************************
 * EECE444 Lab 3 Code
-*   MemoryTools.c is a module containing memory interface and validation. It contains
-*   a public function for checksum and an interface for EEPROM via SPI - configured
-*   for function generator use
+*   MemoryTools.c is a module containing memory interface and validation
 *
-* 01/25/2022 Nick Coyle, Aili Emory, Dominic Danis
+* 01/25/2022 Nick Coyle
 *******************************************************************************/
 #include "MCUType.h"               /* Include header files                    */
 #include "MemoryTools.h"

@@ -24,12 +24,11 @@ static void EEPROMCmd(INT16U cmd);
 static INT16U EEPROMRead(INT8U addr);
 static void EEPROMWrite(INT8U addr, INT16U wr_data);
 static INT16U EEPROMXfr16(INT32U pushr);
-
+static void EEPROMSaveConfig(void);
 typedef union{
     SAVED_CONFIG Config;
     INT16U ConfigArr[(sizeof(SAVED_CONFIG)+1)/2];
 } EEPROMBLOCK;
-
 EEPROMBLOCK EEPROMCurrent;
 
 void EEPROMInit(void){
@@ -49,14 +48,45 @@ void EEPROMInit(void){
                     SPI_CTAR_CPHA(1)|SPI_CTAR_CPOL(0);
     //Controller with transfer FIFOs disabled
     SPI2->MCR = SPI_MCR_MSTR(1)|SPI_MCR_DIS_TXF(1)|SPI_MCR_DIS_RXF(1);
-
 }
-void EEPROMSaveConfig(SAVED_CONFIG current){
+
+void EEPROMSaveState(INT8U state){
+    EEPROMCurrent.Config.state = state;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    EEPROMSaveConfig();
+}
+
+void EEPROMSaveSineFreq(INT16U sine_freq){
+    EEPROMCurrent.Config.sine_freq = sine_freq;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    EEPROMSaveConfig();
+}
+void EEPROMSaveSineLevel(INT8U sine_level){
+    EEPROMCurrent.Config.sine_level = sine_level;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    EEPROMSaveConfig();
+}
+void EEPROMSavePulseFreq(INT16U pulse_freq){
+    EEPROMCurrent.Config.pulse_freq = pulse_freq;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    EEPROMSaveConfig();
+}
+void EEPROMSavePulseLevel(INT8U pulse_level){
+    EEPROMCurrent.Config.pulse_level = pulse_level;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    EEPROMSaveConfig();
+}
+
+void EEPROMSaveConfig(void){
     OS_ERR os_err;
     INT8U addr = 0;
-    EEPROMCurrent.Config = current;
     EEPROMCmd(EWEN);
-    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){
+    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){          /*Write the entire stored array*/
         EEPROMWrite(addr,EEPROMCurrent.ConfigArr[increment]);
         addr++;
         OSTimeDly(7,OS_OPT_TIME_DLY,&os_err);
@@ -66,9 +96,22 @@ void EEPROMSaveConfig(SAVED_CONFIG current){
 
 SAVED_CONFIG EEPROMGetConfig(void){
     INT8U addr = 0;
-    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){
+    INT16U cs = 0;
+    for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){          /*Read the entire array*/
         EEPROMCurrent.ConfigArr[increment] = EEPROMRead(addr);
+        addr++;
     }
+    cs = EEPROMCurrent.Config.checksum;
+    EEPROMCurrent.Config.checksum = 0;
+    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    if(cs != EEPROMCurrent.Config.checksum){                                                /*Verify the loaded values agree with loaded checksum*/
+        EEPROMCurrent.Config.state = 0;                                                     /*Set to defaults*/
+        EEPROMCurrent.Config.sine_freq = 1000;
+        EEPROMCurrent.Config.sine_level = 10;
+        EEPROMCurrent.Config.pulse_freq = 1000;
+        EEPROMCurrent.Config.pulse_level = 10;
+    }
+    else{}
     return EEPROMCurrent.Config;
 }
 
@@ -77,7 +120,7 @@ static INT16U EEPROMRead(INT8U addr){
     //send command and address
     (void)EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(1)|SPI_PUSHR_CTAS(0)|
                       SPI_PUSHR_TXDATA((0x6<<8)|addr));
-    rd_value = EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(1)|SPI_PUSHR_CTAS(1)|
+    rd_value = EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(0)|SPI_PUSHR_CTAS(1)|
                       SPI_PUSHR_TXDATA(0x0000));
     return rd_value;
 }
@@ -87,7 +130,7 @@ static void EEPROMWrite(INT8U addr, INT16U wr_data){
     (void)EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(1)|SPI_PUSHR_CTAS(0)|
                       SPI_PUSHR_TXDATA((0x5<<8) | (addr & 0x7F)));
     //send data
-    (void)EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(1)|SPI_PUSHR_CTAS(0)|
+    (void)EEPROMXfr16(SPI_PUSHR_PCS(1)|SPI_PUSHR_CONT(0)|SPI_PUSHR_CTAS(0)|
                       SPI_PUSHR_TXDATA(wr_data));
 }
 

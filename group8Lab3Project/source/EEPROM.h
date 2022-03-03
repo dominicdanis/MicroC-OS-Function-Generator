@@ -20,4 +20,8 @@ typedef struct{
 
 void EEPROMInit(void);
 SAVED_CONFIG EEPROMGetConfig(void);
-void EEPROMSaveConfig(SAVED_CONFIG current);
+void EEPROMSaveState(INT8U state);
+void EEPROMSaveSineFreq(INT16U sine_freq);
+void EEPROMSaveSineLevel(INT8U sine_level);
+void EEPROMSavePulseFreq(INT16U pulse_freq);
+void EEPROMSavePulseLevel(INT8U pulse_level);
