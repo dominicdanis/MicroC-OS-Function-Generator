@@ -7,6 +7,16 @@
 * Includes functions by Todd Morton in SPI notes
 *******************************************************************************/
 
+/*Structure Definiton for all parameters that must be kept track of*/
+typedef struct{
+    INT8U state;
+    INT16U sine_freq;
+    INT8U sine_level;
+    INT16U pulse_freq;
+    INT8U pulse_level;
+    INT16U checksum;
+} SAVED_CONFIG;
+
 /*Public Functions*/
 
 /*****************************************************************************************

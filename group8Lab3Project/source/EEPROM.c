@@ -20,15 +20,6 @@ static INT16U EEPROMRead(INT8U addr);
 static void EEPROMWrite(INT8U addr, INT16U wr_data);
 static INT16U EEPROMXfr16(INT32U pushr);
 static void EEPROMSaveConfig(void);
-/*Structure Definiton for all parameters that must be kept track of*/
-typedef struct{
-    INT8U state;
-    INT16U sine_freq;
-    INT8U sine_level;
-    INT16U pulse_freq;
-    INT8U pulse_level;
-    INT16U checksum;
-} SAVED_CONFIG;
 /*Union for access by structure or by INT16U blocks*/
 typedef union{
     SAVED_CONFIG Config;
