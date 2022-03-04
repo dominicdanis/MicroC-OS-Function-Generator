@@ -20,14 +20,13 @@
 #include "uCOSTSI.h"
 #include "EEPROM.h"
 
-
 #define FREQ_LIMIT_HIGH 10000
 #define FREQ_LIMIT_LOW 10
 #define ASCII_CODE_ZERO 48
 #define DEFAULT_FREQ 1000
 #define DEFAULT_LEVEL 10
 
-typedef enum {DEFAULT, SINEWAVE, PULSE_TRAIN} UI_STATES_T;
+typedef enum {SINEWAVE, PULSE_TRAIN} UI_STATES_T;
 /*****************************************************************************************
  * Private Resources
  *****************************************************************************************/
@@ -58,7 +57,8 @@ static void  appTouchSensorTask(void *p_arg);
 /*****************************************************************************************
  * Other Function Prototypes.
  *****************************************************************************************/
-
+static void appDispHelper(UI_STATES_T current_state);
+static INT8U intLen(INT16U input);
 
 /*****************************************************************************************
  * main()
@@ -71,7 +71,7 @@ void main(void) {
 
 	OSInit(&os_err);                    /* Initialize uC/OS-III                         */
 
-	OSTaskCreate(&appStartTaskTCB,                  /* Address of TCB assigned to task */
+	OSTaskCreate(&appStartTaskTCB,             /* Address of TCB assigned to task */
 			"Start Task",                      /* Name you want to give the task */
 			appStartTask,                      /* Address of the task itself */
 			(void *) 0,                        /* p_arg is not used so null ptr */
@@ -82,10 +82,10 @@ void main(void) {
 			0,                                 /* Size of task message queue */
 			0,                                 /* Time quanta for round robin */
 			(void *) 0,                        /* Extension pointer is not used */
-			(OS_OPT_TASK_NONE), 				/* Options */
+			(OS_OPT_TASK_NONE), 			   /* Options */
 			&os_err);                          /* Ptr to error code destination */
 
-	OSStart(&os_err);               /*Start multitasking(i.e. give control to uC/OS)    */
+	OSStart(&os_err);               		   /*Start multitasking(i.e. give control to uC/OS)    */
 }
 
 /*****************************************************************************************
@@ -134,6 +134,8 @@ static void appStartTask(void *p_arg) {
 	DMAInit();
 	TSIInit();
 	EEPROMInit();
+	SineGenInit();
+	PulseTrainInit();
 
     loaded_state = EEPROMGetConfig();
     if(loaded_state.state==0){
@@ -149,17 +151,8 @@ static void appStartTask(void *p_arg) {
     SinewaveSetFreq(loaded_state.sine_freq);
     PulseTrainSetLevel(loaded_state.pulse_level);
     PulseTrainSetFreq(loaded_state.pulse_freq);
-    if(current == PULSE_TRAIN) {
-        LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
-        LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)loaded_state.pulse_freq, 5, LCD_DEC_MODE_AL);
-        LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-        LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)loaded_state.pulse_level, 2, LCD_DEC_MODE_AL);
-    } else {
-        LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
-        LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)loaded_state.sine_freq, 5, LCD_DEC_MODE_AL);
-        LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-        LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)loaded_state.sine_level, 2, LCD_DEC_MODE_AL);
-    }
+    appDispHelper(current);
+
     OSTaskDel((OS_TCB *)0, &os_err);
 }
 
@@ -200,8 +193,12 @@ static void appProcessKeyTask(void *p_arg){
 			EEPROMSaveState(1);
 			break;
 		case DC4:	/* D Key */
-			current_state = DEFAULT;
+			current_state = SINEWAVE;
 			EEPROMSaveState(0);
+			SinewaveSetFreq(DEFAULT_FREQ);
+			SinewaveSetLevel(DEFAULT_LEVEL);
+			PulseTrainSetFreq(DEFAULT_FREQ);
+			PulseTrainSetLevel(DEFAULT_LEVEL);
 			break;
 		case '#': 	/* ENTER Key */
 			if(user_freq >= FREQ_LIMIT_LOW && user_freq <= FREQ_LIMIT_HIGH){
@@ -254,17 +251,7 @@ static void appProcessKeyTask(void *p_arg){
 			UIState = current_state;
 		OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
 
-		if(current_state == PULSE_TRAIN) {
-			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)PulseTrainGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
-		} else {
-			LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)SinewaveGetFreq(), 5, LCD_DEC_MODE_AL);
-			LcdDispString(LCD_ROW_2, LCD_COL_6,LCD_LAYER_FREQ,"Hz");
-			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
-		}
+		appDispHelper(current_state);
 	}
 }
 /*****************************************************************************************
@@ -290,12 +277,12 @@ static void appTouchSensorTask(void *p_arg){
         OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
             current_state = UIState;                                            /* Determine Current State */
         OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
-
-        if(current_state == SINEWAVE){
+		if(current_state == SINEWAVE){
             level = SinewaveGetLevel();
-        }
-        else{
+        }else if(current_state == PULSE_TRAIN){
             level = PulseTrainGetLevel();
+        } else {
+        	// do nothing
         }
         if((cur_sense_flags & (1<<BRD_PAD1_CH)) != 0){                          /* Increment Level */
             if(level == 20){
@@ -317,15 +304,73 @@ static void appTouchSensorTask(void *p_arg){
         }
         else{
         }
+
         if(current_state == SINEWAVE){                                          /* Set Level, Display value */
             SinewaveSetLevel(level);
             EEPROMSaveSineLevel(level);
-            LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)SinewaveGetLevel(), 2, LCD_DEC_MODE_AL);
-        }
-        else{
+        }else{
             PulseTrainSetLevel(level);
             EEPROMSavePulseLevel(level);
-            LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_FREQ,(INT32U)PulseTrainGetLevel(), 2, LCD_DEC_MODE_AL);
         }
+        appDispHelper(current_state);
     }
+}
+
+/*****************************************************************************************
+* appDispHelper
+* Helper function to prevent code duplication. Displays the state, freq, and level
+* on the LCD.
+*****************************************************************************************/
+static void appDispHelper(UI_STATES_T current_state) {
+	INT8U level;
+	INT16U freq;
+	INT8U lenFreq;
+
+	if(current_state == PULSE_TRAIN){
+		freq = PulseTrainGetFreq();
+		lenFreq = intLen(freq);
+		level = 5*PulseTrainGetLevel();				/* multiply by 5 to convert to percentage out of 100% */
+		LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE,"PULSE");
+		LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)freq, lenFreq, LCD_DEC_MODE_AL);
+		LcdDispString(LCD_ROW_2, lenFreq+1,LCD_LAYER_FREQ,"Hz   ");
+		if(level == 100){
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_13,LCD_LAYER_LEVEL,(INT32U)level, 3, LCD_DEC_MODE_AL);
+		}else if(level > 9){
+			LcdDispChar(LCD_ROW_2, LCD_COL_13,LCD_LAYER_LEVEL,' ');
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_14,LCD_LAYER_LEVEL,(INT32U)level, 2, LCD_DEC_MODE_AL);
+		}else{
+			LcdDispString(LCD_ROW_2, LCD_COL_13,LCD_LAYER_LEVEL,"  ");
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_LEVEL,(INT32U)level, 1, LCD_DEC_MODE_AL);
+		}
+		LcdDispChar(LCD_ROW_2, LCD_COL_16,LCD_LAYER_LEVEL,'%');
+	}else if(current_state == SINEWAVE){
+		freq = SinewaveGetFreq();
+		lenFreq = intLen(freq);
+		level = SinewaveGetLevel();
+		LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
+		LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)freq, lenFreq, LCD_DEC_MODE_AL);
+		LcdDispString(LCD_ROW_2, lenFreq+1,LCD_LAYER_FREQ,"Hz   ");
+		LcdDispString(LCD_ROW_2, LCD_COL_13,LCD_LAYER_LEVEL,"  ");
+		if(level > 9) {
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_LEVEL,(INT32U)level, 2, LCD_DEC_MODE_AL);
+		}else{
+			LcdDispChar(LCD_ROW_2, LCD_COL_15,LCD_LAYER_LEVEL,' ');
+			LcdDispDecWord(LCD_ROW_2, LCD_COL_16,LCD_LAYER_LEVEL,(INT32U)level, 1, LCD_DEC_MODE_AL);
+		}
+	}else{
+		// do nothing
+	}
+}
+
+/****************************************************************************************
+ * intLen
+ * Return the number of digits in an integer
+ ****************************************************************************************/
+static INT8U intLen(INT16U input){
+	INT8U lenInput = 0;
+	while(input > 0){
+		input = input/10;
+		lenInput++;
+	}
+	return lenInput;
 }

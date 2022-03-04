@@ -123,10 +123,10 @@ static void sineGenTask(void *p_arg){
     OS_ERR os_err;
     (void)p_arg;
 
-    index = IndexPend();                        //pend on the DMA
-    current_specs = sineGetSpecs();              //grab specs for calculation
-    generated_values = arm_sin_q15(TS*current_specs.frequency);
-    generated_values *= current_specs.level;
+    //index = IndexPend();                        //pend on the DMA
+    //current_specs = sineGetSpecs();              //grab specs for calculation
+    //generated_values = arm_sin_q15(TS*current_specs.frequency);
+    //generated_values *= current_specs.level;
     //store in pp buffer
 }
 
