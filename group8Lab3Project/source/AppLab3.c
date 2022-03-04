@@ -26,7 +26,7 @@
 #define DEFAULT_FREQ 1000
 #define DEFAULT_LEVEL 10
 
-typedef enum {DEFAULT, SINEWAVE, PULSE_TRAIN} UI_STATES_T;
+typedef enum {SINEWAVE, PULSE_TRAIN} UI_STATES_T;
 /*****************************************************************************************
  * Private Resources
  *****************************************************************************************/
@@ -193,11 +193,13 @@ static void appProcessKeyTask(void *p_arg){
 			EEPROMSaveState(1);
 			break;
 		case DC4:	/* D Key */
-			current_state = DEFAULT;
+			current_state = SINEWAVE;
 			EEPROMSaveState(0);
+			SinewaveSetFreq(DEFAULT_FREQ);
+			SinewaveSetLevel(DEFAULT_LEVEL);
 			break;
 		case '#': 	/* ENTER Key */
-			if(current_state != DEFAULT && user_freq >= FREQ_LIMIT_LOW && user_freq <= FREQ_LIMIT_HIGH){
+			if(user_freq >= FREQ_LIMIT_LOW && user_freq <= FREQ_LIMIT_HIGH){
 				LcdDispClear(LCD_LAYER_USER_FREQ);
 				LcdDispClear(LCD_LAYER_FREQ);
 				if(current_state == PULSE_TRAIN) {
@@ -353,12 +355,8 @@ static void appDispHelper(UI_STATES_T current_state) {
 			LcdDispChar(LCD_ROW_2, LCD_COL_15,LCD_LAYER_LEVEL,' ');
 			LcdDispDecWord(LCD_ROW_2, LCD_COL_16,LCD_LAYER_LEVEL,(INT32U)level, 1, LCD_DEC_MODE_AL);
 		}
-	}else{ 	/* DEFAULT state */
-		LcdDispString(LCD_ROW_1, LCD_COL_12,LCD_LAYER_UI_STATE," SINE");
-		LcdDispDecWord(LCD_ROW_2, LCD_COL_1,LCD_LAYER_FREQ,(INT32U)DEFAULT_FREQ, 4, LCD_DEC_MODE_AL);
-		LcdDispString(LCD_ROW_2, LCD_COL_5,LCD_LAYER_FREQ,"Hz  ");
-		LcdDispString(LCD_ROW_2, LCD_COL_13,LCD_LAYER_LEVEL,"  ");
-		LcdDispDecWord(LCD_ROW_2, LCD_COL_15,LCD_LAYER_LEVEL,(INT32U)DEFAULT_LEVEL, 2, LCD_DEC_MODE_AL);
+	}else{
+		// do nothing
 	}
 }
 
