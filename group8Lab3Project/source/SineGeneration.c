@@ -142,7 +142,7 @@ static void sineGenTask(void *p_arg){
     			//sine_vals[i] = 0;
     		}else{
     			// sign bit not set
-    			sine_vals[i] = ((sine_val)/(2<<31-1))+2048;
+    			sine_vals[i] = ((sine_val)/((2<<31)-1))+2048;
     		}
 
     	   /*
