@@ -197,6 +197,8 @@ static void appProcessKeyTask(void *p_arg){
 			EEPROMSaveState(0);
 			SinewaveSetFreq(DEFAULT_FREQ);
 			SinewaveSetLevel(DEFAULT_LEVEL);
+			PulseTrainSetFreq(DEFAULT_FREQ);
+			PulseTrainSetLevel(DEFAULT_LEVEL);
 			break;
 		case '#': 	/* ENTER Key */
 			if(user_freq >= FREQ_LIMIT_LOW && user_freq <= FREQ_LIMIT_HIGH){
