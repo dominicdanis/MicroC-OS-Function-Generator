@@ -1,6 +1,6 @@
 /*******************************************************************************
  * uCOS TSI Module
- * 02/17/2022 Aili Emory
+ * 02/17/2022 Aili Emory, Nick Coyle, Dominic Danis
  *******************************************************************************/                                                                                                                                                                            #ifndef K65TWR_TSI_H_
 #define K65TWR_TSI_H_
 #define BRD_PAD1_CH  12U
