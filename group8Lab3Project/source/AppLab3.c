@@ -152,10 +152,9 @@ static void appStartTask(void *p_arg) {
     PulseTrainSetLevel(loaded_state.pulse_level);
     PulseTrainSetFreq(loaded_state.pulse_freq);
     appDispHelper(current);
-
+	PulseTrainInit();
     OSTaskDel((OS_TCB *)0, &os_err);
 }
-
 /*****************************************************************************************
  * appProcessKeyTask
  * UI to edit the function generator frequency and type of wave.

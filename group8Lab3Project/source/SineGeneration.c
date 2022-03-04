@@ -2,7 +2,7 @@
  * SineGeneration Module
  * Contains single task, which will pend on a DMA flag, calculate sinewave values based
  * on current configurations and store in DMA ping pong buffer
- * 02/14/2022 Nick Coyle, Aili Emory, Dominic Danis
+ * 02/14/2022 Dominic Danis, Nick Coyle, Aili Emory
  *****************************************************************************************/
 
 #include "os.h"

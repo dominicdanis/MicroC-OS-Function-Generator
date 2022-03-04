@@ -1,7 +1,6 @@
 /*******************************************************************************
  * uCOS TSI Module
- * Contains single task,
- * 02/17/2022 Aili Emory
+ * 02/17/2022 Aili Emory, Nick Coyle, Dominic Danis
  *******************************************************************************/
 #include "os.h"     /*Header files: Dependencies*/
 #include "app_cfg.h"
