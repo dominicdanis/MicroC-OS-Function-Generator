@@ -136,13 +136,22 @@ static void sineGenTask(void *p_arg){
 
     	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
     		sine_val = arm_sin_q31(argument);
-    		if((sine_val & BIT32_MASK) > 1){
-    			// sign bit is set
-    			sine_vals[i] = (((~sine_val)/(2<<19))-2048);
-    			//sine_vals[i] = 0;
+    		if((sine_val & BIT32_MASK) > 0){
+    		    sine_val = (sine_val<<1);
+    		    sine_val = (~sine_val);
+    		    sine_val = (sine_val>>21);
+    		    sine_vals[i] = (2048 - ((INT16U)(sine_val)));
     		}else{
-    			// sign bit not set
-    			sine_vals[i] = ((sine_val)/((2<<31)-1))+2048;
+    		    sine_val = (sine_val<<1);
+    		    sine_val = (sine_val>>21);
+    		    sine_val = (INT16U)(sine_val);
+    		    sine_vals[i] = (sine_val + 2048);
+    		}
+
+    		if(i%(48000/frequency)==0){
+    			argument = 0;
+    		}else{
+    			argument += (TS*frequency);
     		}
 
     	   /*
@@ -150,14 +159,9 @@ static void sineGenTask(void *p_arg){
     	      sine_vals[i] = sine_vals[i] + sine_vals[i];
     	   }
     	   */
-    	   if(i%47==0){
-    		   argument = 0;
-    	   }
-    	   else{
-    		   argument += (TS*frequency);
-    	   }
+
+    		//argument += (TS*frequency);
     	}
-    	argument = 0;
     	DMAFillBuffer(index, sine_vals);
     }
 }

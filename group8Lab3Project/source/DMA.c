@@ -88,8 +88,7 @@ void DMAInit(void){
     DMA0->TCD[DMA_CH].SOFF = DMA_SOFF_SOFF(BYTES_PER_SAMPLE);
 
     //This is the value to be added to the address at the end of a major loop.
-    DMA0->TCD[DMA_CH].SLAST = DMA_SLAST_SLAST(-(BYTES_PER_BLOCK));
-    //DMA0->TCD[DMA_CH].SLAST = DMA_SLAST_SLAST(-(BYTES_PER_BUFFER));
+    DMA0->TCD[DMA_CH].SLAST = DMA_SLAST_SLAST(-(BYTES_PER_BUFFER));
 
     //The destination address, DADDR, is &DAC0->DAT[0].DATL and the offset is
     //0 because the transfer always goes to the same location
@@ -107,8 +106,8 @@ void DMAInit(void){
     //Now we need to set the number of minor loops in the whole block. In this case, there are
     //SAMPLES_PER_BLOCK samples in the lookup table block so we set DMA_CITER_ELINKNO_CITER and
     //DMA_BITER_ELINKNO_BITER to SAMPLES_PER_BLOCK
-    DMA0->TCD[DMA_CH].CITER_ELINKNO = DMA_CITER_ELINKNO_ELINK(0) | DMA_CITER_ELINKNO_CITER(SAMPLES_PER_BLOCK);
-    DMA0->TCD[DMA_CH].BITER_ELINKNO = DMA_BITER_ELINKNO_ELINK(0) | DMA_BITER_ELINKNO_BITER(SAMPLES_PER_BLOCK);
+    DMA0->TCD[DMA_CH].CITER_ELINKNO = DMA_CITER_ELINKNO_ELINK(0) | DMA_CITER_ELINKNO_CITER(NUM_BLOCKS*SAMPLES_PER_BLOCK);
+    DMA0->TCD[DMA_CH].BITER_ELINKNO = DMA_BITER_ELINKNO_ELINK(0) | DMA_BITER_ELINKNO_BITER(NUM_BLOCKS*SAMPLES_PER_BLOCK);
 
     //we need to set the bits in the CSR register to completely initialize the TCD.
     //Enable interrupt at half filled Tx buffer and end of major loop.
