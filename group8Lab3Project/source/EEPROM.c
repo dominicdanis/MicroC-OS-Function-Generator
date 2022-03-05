@@ -183,7 +183,7 @@ static void EEPROMWrite(INT8U addr, INT16U wr_data){
 }
 /*****************************************************************************************
 * EEEPROMXfr16
-* Transfers given pushr vaues and returns recieved data on SPI
+* Transfers given pushr vaues and returns received data on SPI
 * From SPI notes Todd Morton
  *****************************************************************************************/
 static INT16U EEPROMXfr16(INT32U pushr){
@@ -195,7 +195,7 @@ static INT16U EEPROMXfr16(INT32U pushr){
     //Wait for received data and clear flag
     while((SPI2->SR & SPI_SR_RFDF_MASK) == 0){}
     SPI2->SR |= SPI_SR_RFDF_MASK;
-    //return recieved data
+    //return received data
     return SPI2->POPR;
 }
 /*****************************************************************************************

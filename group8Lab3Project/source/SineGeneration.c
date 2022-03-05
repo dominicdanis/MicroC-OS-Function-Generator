@@ -13,7 +13,7 @@
 #include "DMA.h"
 
 #define TS 44739
-#define BIT32_MASK 1<<31
+#define BIT31_MASK 1<<31
 #define AMP_SCALE 6553
 
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
@@ -39,10 +39,7 @@ static OS_MUTEX SineMutexKey;
 * Task Function Prototypes.
 *****************************************************************************************/
 static void sineGenTask(void *p_arg);
-/*****************************************************************************************
-* Private Function Prototypes
-*****************************************************************************************/
-static SINE_SPECS sineGetSpecs(void);
+
 /*****************************************************************************************
 * Init function - creates task and Mutex.
 *****************************************************************************************/
@@ -104,18 +101,6 @@ INT8U SinewaveGetLevel(void){
     OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
     return level;
 }
-/*****************************************************************************************
-* Getter function for SW specs.
-*****************************************************************************************/
-static SINE_SPECS sineGetSpecs(void){
-    SINE_SPECS current_specs;
-    OS_ERR os_err;
-    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    current_specs = CurrentSpecs;
-    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
-    return current_specs;
-}
-
 
 /*****************************************************************************************
 * sineGenTask - unfinished. Will pend on DMA ISR, get current configurations, compute sine values
@@ -139,15 +124,15 @@ static void sineGenTask(void *p_arg){
 
     	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
     		sine_val = arm_sin_q31(argument);
-    		if((sine_val & BIT32_MASK) > 0){
+    		if((sine_val & BIT31_MASK) > 0){				//value is negative
     		    sine_val = (sine_val<<1);
     		    sine_val = (~sine_val);
     		    temp = level<<6;                            //scale level for FP multiplication
-    		    temp = (AMP_SCALE*temp);                    //multiply level and scalar to find Vpeak
+    		    temp = (AMP_SCALE*temp);                    //multiply level and scaler to find Vpeak
     		    temp *= sine_val;                           //find offset for each sample
     		    temp = temp>>44;                            //scale back to a 12 bit
     		    sine_vals[i] = (2048 - ((INT16U)(temp)));
-    		}else{
+    		}else{											//value is positive
     		    sine_val = (sine_val<<1);
     		    temp = level<<6;
                 temp = (AMP_SCALE*temp);
@@ -156,11 +141,14 @@ static void sineGenTask(void *p_arg){
     		    sine_vals[i] = ((INT16U)temp + 2048);
     		}
 
-    		if(i%(48000/frequency)==0){
-    			argument = 0;
+    		argument += (TS*frequency);
+    		//2147483648
+    		if(argument >= BIT31_MASK) {
+    			argument -= BIT31_MASK;
     		}else{
-    			argument += (TS*frequency);
+    			// do nothing
     		}
+
     	}
     	DMAFillBuffer(index, sine_vals);
     }
