@@ -14,6 +14,8 @@
 
 #define TS 44739
 #define BIT32_MASK 1<<31
+#define AMP_SCALE 6553
+
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
 
 /****************************************************************************************
@@ -123,6 +125,7 @@ static void sineGenTask(void *p_arg){
 	INT32U sine_val;
 	INT32U argument = 0;
 	INT8U index = 0;
+	INT64U temp = 0;
 
 	INT16U frequency;
 	INT8U level;
@@ -130,7 +133,7 @@ static void sineGenTask(void *p_arg){
     (void)p_arg;
 
     while(1) {
-    	index = DMAReadyPend(0, &os_err);            //pend on the DMA
+    	index = DMAReadyPend(0, &os_err);                   //pend on the DMA
     	frequency = SinewaveGetFreq();
     	level = SinewaveGetLevel();
 
@@ -139,13 +142,18 @@ static void sineGenTask(void *p_arg){
     		if((sine_val & BIT32_MASK) > 0){
     		    sine_val = (sine_val<<1);
     		    sine_val = (~sine_val);
-    		    sine_val = (sine_val>>21);
-    		    sine_vals[i] = (2048 - ((INT16U)(sine_val)));
+    		    temp = level<<6;                            //scale level for FP multiplication
+    		    temp = (AMP_SCALE*temp);                    //multiply level and scalar to find Vpeak
+    		    temp *= sine_val;                           //find offset for each sample
+    		    temp = temp>>44;                            //scale back to a 12 bit
+    		    sine_vals[i] = (2048 - ((INT16U)(temp)));
     		}else{
     		    sine_val = (sine_val<<1);
-    		    sine_val = (sine_val>>21);
-    		    sine_val = (INT16U)(sine_val);
-    		    sine_vals[i] = (sine_val + 2048);
+    		    temp = level<<6;
+                temp = (AMP_SCALE*temp);
+                temp *= sine_val;
+                temp = temp>>44;
+    		    sine_vals[i] = ((INT16U)temp + 2048);
     		}
 
     		if(i%(48000/frequency)==0){
@@ -153,14 +161,6 @@ static void sineGenTask(void *p_arg){
     		}else{
     			argument += (TS*frequency);
     		}
-
-    	   /*
-    	   for(INT8U j=0; j<level; j++){
-    	      sine_vals[i] = sine_vals[i] + sine_vals[i];
-    	   }
-    	   */
-
-    		//argument += (TS*frequency);
     	}
     	DMAFillBuffer(index, sine_vals);
     }
