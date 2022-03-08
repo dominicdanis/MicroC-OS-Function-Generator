@@ -1,7 +1,7 @@
 /*******************************************************************************
 * MemoryTools contains a public function for checksum and an interface for
 * EEPROM via SPI - configured for function generator use.
-* 01/25/2022 Nick Coyle, Aili Emory, Dominic Danis
+* 01/25/2022 Nick Coyle
 *******************************************************************************/
 #include "MCUType.h"               /* Include header files                    */
 #include "MemoryTools.h"

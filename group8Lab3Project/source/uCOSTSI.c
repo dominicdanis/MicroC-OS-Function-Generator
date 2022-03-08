@@ -1,6 +1,6 @@
 /*******************************************************************************
  * uCOS TSI Module
- * 02/17/2022 Aili Emory, Nick Coyle, Dominic Danis
+ * 02/17/2022 Aili Emory
  *******************************************************************************/
 #include "os.h"     /*Header files: Dependencies*/
 #include "app_cfg.h"
@@ -107,9 +107,11 @@ static void tsiTask(void *p_arg){
         tsiStartScan(BRD_PAD1_CH);
         OSTimeDly(6,OS_OPT_TIME_PERIODIC,&os_err);
         tsiProcScan(BRD_PAD1_CH);
+        DB3_TURN_ON();
         tsiStartScan(BRD_PAD2_CH);
         OSTimeDly(6,OS_OPT_TIME_PERIODIC,&os_err);
         tsiProcScan(BRD_PAD2_CH);
+        DB3_TURN_OFF();
     }
 }
 /********************************************************************************
