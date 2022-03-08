@@ -1,7 +1,8 @@
 /*****************************************************************************************
  * DMA Module
- *
- * 02/18/2022 Nick Coyle, Aili Emory, Dominic Danis
+ * DMA writes values from the ping pong buffer to the DAC.
+ * DMA configured to use hardware triggers from PIT timer.
+ * 02/25/2022 Nick Coyle
  * Includes functions by Todd Morton in DMA notes
  *****************************************************************************************/
 
@@ -20,31 +21,32 @@ typedef struct{
 }DMA_BLOCK_RDY;
 
 /*******************************************************************************************
-* Public Functions Declarations
+* Public Functions
 *******************************************************************************************/
 void DMA0_DMA16_IRQHandler(void);
 
 /*******************************************************************************************
-* Private Functions Declarations
+* Private Functions
 *******************************************************************************************/
 static void DAC0Init(void);  /* Initialize the Digital to Analog Converter */
 static void PitInit(void);	 /* Initialize the Periodic Interrupt Timer */
 
-/****************************************************************************************
+/*******************************************************************************************
 * Private Resources
-****************************************************************************************/
+*******************************************************************************************/
 static DMA_BLOCK_RDY dmaBlockRdy;
 
 /*******************************************************************************************
 * Ping Pong Buffer (Private)
+* This is the Ping Pong Buffer, full double-buffering (ping-pong).
+* Should only be accessible externally via DMAFillBuffer()
 *******************************************************************************************/
-// This is the Ping Pong Buffer, full double-buffering (ping-pong).
-// Should only be accessible externally via DMAFillBuffer()
-INT16U dmaBuffer[NUM_BLOCKS][SAMPLES_PER_BLOCK];
+static INT16U dmaBuffer[NUM_BLOCKS][SAMPLES_PER_BLOCK];
 
 /*******************************************************************************************
 * DMAFillBuffer
 * Fills the DMA ping pong buffer
+* 02/25/2022 Nick Coyle
 *******************************************************************************************/
 void DMAFillBuffer(INT8U index, INT16U *samples) {
 	for(int i=0; i<SAMPLES_PER_BLOCK;i++) {
@@ -54,10 +56,9 @@ void DMAFillBuffer(INT8U index, INT16U *samples) {
 }
 
 /*******************************************************************************************
-DMAInInit
-    Initializes DMA for an input stream from ADC0 to ping-pong buffers
-    Parameters: none
-    Return: none
+* DMAInInit
+* Initializes DMA for an input stream from ADC0 to ping-pong buffers
+* 02/25/2022 Nick Coyle
 *******************************************************************************************/
 void DMAInit(void){
     OS_ERR os_err;
@@ -97,7 +98,7 @@ void DMAInit(void){
     DMA0->TCD[DMA_CH].DOFF = DMA_DOFF_DOFF(0);
 
     //This is the value to be added to the destination address at the end of a major loop.
-    // Since this is the DAC address, it never changes so the offset is set to 0.
+    //Since this is the DAC address, it never changes so the offset is set to 0.
     DMA0->TCD[DMA_CH].DLAST_SGA = DMA_DLAST_SGA_DLASTSGA(0);
 
     //Minor loop size should be set to the sample size since we want one sample transferred
@@ -113,7 +114,8 @@ void DMAInit(void){
     //we need to set the bits in the CSR register to completely initialize the TCD.
     //Enable interrupt at half filled Tx buffer and end of major loop.
     //This allows "ping-pong" buffer processing.
-    DMA0->TCD[DMA_CH].CSR = DMA_CSR_ESG(0) | DMA_CSR_MAJORELINK(0) | DMA_CSR_BWC(3) | DMA_CSR_INTHALF(1) | DMA_CSR_INTMAJOR(1) | DMA_CSR_DREQ(0) | DMA_CSR_START(0);
+    DMA0->TCD[DMA_CH].CSR = DMA_CSR_ESG(0) | DMA_CSR_MAJORELINK(0) | DMA_CSR_BWC(3) | DMA_CSR_INTHALF(1) |
+    		DMA_CSR_INTMAJOR(1) | DMA_CSR_DREQ(0) | DMA_CSR_START(0);
 
     //Finally, we enable the DMAMUX, and enable the DMA for the ‘always enabled’ channel 60
     DMAMUX->CHCFG[DMA_CH] = DMAMUX_CHCFG_ENBL(1)|DMAMUX_CHCFG_TRIG(1)|DMAMUX_CHCFG_SOURCE(60);
@@ -121,17 +123,17 @@ void DMAInit(void){
 	//enable DMA interrupt
 	NVIC_EnableIRQ(DMA_CH);
 
-	//All set to go, enable DMA channel!
+	//All set to go, enable DMA channel
     DMA0->SERQ = DMA_SERQ_SERQ(DMA_CH);
 
     DAC0Init();
     PitInit();
 }
 
-/***********************************************************************
+/*******************************************************************************************
  * DAC0Init - Initialize DAC0 and set output reference (3.3V)
  * Nick Coyle 11/13/2021
- ************************************************************************/
+ ******************************************************************************************/
 static void DAC0Init(void){
     SIM->SCGC2 |= SIM_SCGC2_DAC0(1);  /* enable DAC clock */
     DAC0->C0 |= DAC_C0_DACEN(1);      /* set bit 7 to enable DAC */
@@ -139,12 +141,12 @@ static void DAC0Init(void){
     DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 1 select hardware trigger */
 }
 
-/***********************************************************************
+/*******************************************************************************************
  * PitInit - Initialize the PIT
  * Todd Morton 11/09/2020
  * Nick Coyle 11/13/2021 revised the comments
  * Nick Coyle 02/19/2022 changed period for 48kHz sample rate
- ************************************************************************/
+ ******************************************************************************************/
 static void PitInit(void){
 	//the PIT needs to be configured to generate triggers at the desired sample rate and the DAC
 	SIM->SCGC6 |= SIM_SCGC6_PIT(1);    /* turn on PIT clock */
@@ -154,14 +156,14 @@ static void PitInit(void){
 }
 
 
-/****************************************************************************************
+/*******************************************************************************************
  * DMA Interrupt Handler for the sample stream
  * 08/30/2015 TDM
- ***************************************************************************************/
+ ******************************************************************************************/
 void DMA0_DMA16_IRQHandler(void){
     OS_ERR os_err;
     OSIntEnter();
-    DB2_TURN_ON();
+    DB5_TURN_ON();
     DMA0->CINT = DMA_CINT_CINT(DMA_CH);
 
     if((DMA0->TCD[DMA_CH].CSR & DMA_CSR_DONE_MASK) != 0){
@@ -171,7 +173,7 @@ void DMA0_DMA16_IRQHandler(void){
     }
 
     (void)OSSemPost(&(dmaBlockRdy.flag),OS_OPT_POST_1,&os_err);
-    DB2_TURN_OFF();
+    DB5_TURN_OFF();
     OSIntExit();
 }
 

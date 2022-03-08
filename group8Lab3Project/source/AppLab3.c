@@ -1,7 +1,7 @@
 /*****************************************************************************************
  * Lab2 EE444 MicroC/OS Function Generator Team Project
  * A function generator that runs under MicroC/OS, a preemptive multitasking kernel.
- * 01/25/2022 Nick Coyle, Aili Emory, Dominic Danis
+ * 01/25/2022 Aili Emory, Dominic Danis, Nick Coyle
  *****************************************************************************************/
 #include "os.h"
 #include "app_cfg.h"
@@ -267,7 +267,9 @@ static void appTouchSensorTask(void *p_arg){
     (void)p_arg;
 
     while(1){
-        cur_sense_flags = TSIPend(100,&os_err);
+    	DB2_TURN_OFF();                             /* Turn off debug bit while waiting */
+    	cur_sense_flags = TSIPend(100,&os_err);
+    	DB2_TURN_ON();
         if(os_err == OS_ERR_TIMEOUT){
             cur_sense_flags = 0;
         }else{
@@ -318,6 +320,7 @@ static void appTouchSensorTask(void *p_arg){
 * appDispHelper
 * Helper function to prevent code duplication. Displays the state, freq, and level
 * on the LCD.
+* 2/18/2022 Nick Coyle
 *****************************************************************************************/
 static void appDispHelper(UI_STATES_T current_state) {
 	INT8U level;
@@ -363,6 +366,7 @@ static void appDispHelper(UI_STATES_T current_state) {
 /****************************************************************************************
  * intLen
  * Return the number of digits in an integer
+ * 2/18/2022 Nick Coyle
  ****************************************************************************************/
 static INT8U intLen(INT16U input){
 	INT8U lenInput = 0;

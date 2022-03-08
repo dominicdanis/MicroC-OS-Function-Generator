@@ -2,7 +2,7 @@
  * SineGeneration Module
  * Contains single task, which will pend on a DMA flag, calculate sinewave values based
  * on current configurations and store in DMA ping pong buffer
- * 02/14/2022 Dominic Danis, Nick Coyle, Aili Emory
+ * 02/14/2022 Dominic Danis
  *****************************************************************************************/
 
 #include "os.h"
@@ -11,6 +11,7 @@
 #include "arm_math.h"
 #include "SineGeneration.h"
 #include "DMA.h"
+#include "K65TWR_GPIO.h"
 
 #define TS 44739
 #define BIT31_MASK 2147483648	/* 1<<31 */
@@ -117,7 +118,9 @@ static void sineGenTask(void *p_arg){
     (void)p_arg;
 
     while(1) {
+    	DB4_TURN_OFF();                             /* Turn off debug bit while waiting */
     	index = DMAReadyPend(0, &os_err);                   //pend on the DMA
+    	DB4_TURN_ON();
     	frequency = SinewaveGetFreq();
     	level = SinewaveGetLevel();
 
