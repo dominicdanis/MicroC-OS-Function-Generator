@@ -1,8 +1,7 @@
 /*******************************************************************************
-* EECE444 Lab 3 Code
-*   MemoryTools.c is a module containing memory interface and validation
-*
-* 01/25/2022 Nick Coyle
+* MemoryTools contains a public function for checksum and an interface for
+* EEPROM via SPI - configured for function generator use.
+* 01/25/2022 Nick Coyle, Aili Emory, Dominic Danis
 *******************************************************************************/
 #include "MCUType.h"               /* Include header files                    */
 #include "MemoryTools.h"
@@ -23,4 +22,3 @@ INT16U MemChkSum(INT8U *startaddr, INT8U *endaddr) {
     chk_sum += (INT16U)*start;            /* get the last byte outside the loop to prevent terminal count bug */
     return chk_sum;
 }
-

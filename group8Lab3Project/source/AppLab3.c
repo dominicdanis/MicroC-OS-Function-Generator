@@ -10,15 +10,12 @@
 #include "K65TWR_GPIO.h"
 #include "LcdLayered.h"
 #include "uCOSKey.h"
-#include "SineGeneration.h"
-#include "PulseTrain.h"
-#include "MemoryTools.h"
-#include "SineGeneration.h"
-#include "PulseTrain.h"
-#include "MemoryTools.h"
-#include "DMA.h"
 #include "uCOSTSI.h"
+#include "DMA.h"
+#include "SineGeneration.h"
+#include "PulseTrain.h"
 #include "EEPROM.h"
+#include "MemoryTools.h"
 
 #define FREQ_LIMIT_HIGH 10000
 #define FREQ_LIMIT_LOW 10
@@ -131,30 +128,26 @@ static void appStartTask(void *p_arg) {
 
 	LcdInit();
 	KeyInit();
-	SineGenInit();
-	DMAInit();
 	TSIInit();
-	EEPROMInit();
-	SineGenInit();
-	PulseTrainInit();
-	SineGenInit();
+	DMAInit();
+    SineGenInit();
+    PulseTrainInit();
+    EEPROMInit();
 
     loaded_state = EEPROMGetConfig();
     if(loaded_state.state==0){
         current = SINEWAVE;
-    }
-    else{
+    }else{
         current = PULSE_TRAIN;
     }
     OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
         UIState = current;
     OSMutexPost(&appUIStateKey, OS_OPT_POST_NONE, &os_err);
-    SinewaveSetLevel(loaded_state.sine_level);
     SinewaveSetFreq(loaded_state.sine_freq);
-    PulseTrainSetLevel(loaded_state.pulse_level);
+    SinewaveSetLevel(loaded_state.sine_level);
     PulseTrainSetFreq(loaded_state.pulse_freq);
+    PulseTrainSetLevel(loaded_state.pulse_level);
     appDispHelper(current);
-	PulseTrainInit();
     OSTaskDel((OS_TCB *)0, &os_err);
 }
 /*****************************************************************************************
@@ -200,6 +193,10 @@ static void appProcessKeyTask(void *p_arg){
 			SinewaveSetLevel(DEFAULT_LEVEL);
 			PulseTrainSetFreq(DEFAULT_FREQ);
 			PulseTrainSetLevel(DEFAULT_LEVEL);
+			EEPROMSaveSineFreq(DEFAULT_FREQ);
+			EEPROMSaveSineLevel(DEFAULT_LEVEL);
+			EEPROMSavePulseFreq(DEFAULT_FREQ);
+			EEPROMSavePulseLevel(DEFAULT_LEVEL);
 			break;
 		case '#': 	/* ENTER Key */
 			if(user_freq >= FREQ_LIMIT_LOW && user_freq <= FREQ_LIMIT_HIGH){
@@ -290,7 +287,7 @@ static void appTouchSensorTask(void *p_arg){
                 //do nothing
             }
             else{
-                level = level +1;
+                level = level + 1;
             }
         }
         else{
@@ -300,7 +297,7 @@ static void appTouchSensorTask(void *p_arg){
                 //do nothing
             }
             else{
-                level = level -1;
+                level = level - 1;
             }
         }
         else{

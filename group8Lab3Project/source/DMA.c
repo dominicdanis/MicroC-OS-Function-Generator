@@ -2,6 +2,7 @@
  * DMA Module
  *
  * 02/18/2022 Nick Coyle, Aili Emory, Dominic Danis
+ * Includes functions by Todd Morton in DMA notes
  *****************************************************************************************/
 
 #include "MCUType.h"
@@ -125,7 +126,6 @@ void DMAInit(void){
 
     DAC0Init();
     PitInit();
-    OSSemPost(&(dmaBlockRdy.flag),OS_OPT_POST_1,&os_err);
 }
 
 /***********************************************************************
@@ -136,7 +136,7 @@ static void DAC0Init(void){
     SIM->SCGC2 |= SIM_SCGC2_DAC0(1);  /* enable DAC clock */
     DAC0->C0 |= DAC_C0_DACEN(1);      /* set bit 7 to enable DAC */
     DAC0->C0 |= DAC_C0_DACRFS(1);     /* set bit 6 for DACREF_1 so VDDA 3.3V ref */
-    DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 5 select software trigger */
+    DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 1 select hardware trigger */
 }
 
 /***********************************************************************
@@ -151,7 +151,8 @@ static void PitInit(void){
 	SIM->SCGC6 |= SIM_SCGC6_PIT(1);    /* turn on PIT clock */
     PIT->MCR = PIT_MCR_MDIS(0);        /* enable PIT clock */
     PIT->CHANNEL[0].LDVAL = 1249;      /* set Tep to 20.083us for fs=48kHz (Buss clock = 60MHz) */
-    PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TIE(1)|PIT_TCTRL_TEN(1)); /* enable interrupts, start Timer 0 */
+    //PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TIE(1)|PIT_TCTRL_TEN(1)); /* enable interrupts, start Timer 0 */
+    PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TEN(1)); /* start Timer 0 */
 }
 
 
@@ -171,7 +172,7 @@ void DMA0_DMA16_IRQHandler(void){
         dmaBlockRdy.index = 0;
     }
 
-    OSSemPost(&(dmaBlockRdy.flag),OS_OPT_POST_1,&os_err);
+    (void)OSSemPost(&(dmaBlockRdy.flag),OS_OPT_POST_1,&os_err);
     DB2_TURN_OFF();
     OSIntExit();
 }
@@ -185,6 +186,6 @@ void DMA0_DMA16_IRQHandler(void){
  * 08/30/2015 TDM
  ***************************************************************************************/
 INT8U DMAReadyPend(OS_TICK tout, OS_ERR *os_err_ptr){
-    OSSemPend(&(dmaBlockRdy.flag), tout, OS_OPT_PEND_BLOCKING,(void *)0, os_err_ptr);
+    (void)OSSemPend(&(dmaBlockRdy.flag), tout, OS_OPT_PEND_BLOCKING,(void *)0, os_err_ptr);
     return dmaBlockRdy.index;
 }

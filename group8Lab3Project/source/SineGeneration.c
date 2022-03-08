@@ -13,8 +13,8 @@
 #include "DMA.h"
 
 #define TS 44739
-#define BIT31_MASK 1<<31
-#define AMP_SCALE 6553
+#define BIT31_MASK 2147483648	/* 1<<31 */
+#define AMP_SCALE 95325
 
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
 
@@ -111,7 +111,6 @@ static void sineGenTask(void *p_arg){
 	INT32U argument = 0;
 	INT8U index = 0;
 	INT64U temp = 0;
-
 	INT16U frequency;
 	INT8U level;
     OS_ERR os_err;
@@ -125,30 +124,26 @@ static void sineGenTask(void *p_arg){
     	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
     		sine_val = arm_sin_q31(argument);
     		if((sine_val & BIT31_MASK) > 0){				//value is negative
-    		    sine_val = (sine_val<<1);
-    		    sine_val = (~sine_val);
-    		    temp = level<<6;                            //scale level for FP multiplication
-    		    temp = (AMP_SCALE*temp);                    //multiply level and scaler to find Vpeak
-    		    temp *= sine_val;                           //find offset for each sample
-    		    temp = temp>>44;                            //scale back to a 12 bit
-    		    sine_vals[i] = (2048 - ((INT16U)(temp)));
+    			sine_val = (sine_val<<1);
+    			sine_val = (~sine_val);
+    			temp = (AMP_SCALE*level);                    //multiply level and scaler to find Vpeak
+    			temp *= sine_val;                           //find offset for each sample
+    			temp = temp>>42;                            //scale back to a 12 bit
+    			sine_vals[i] = (2048 - ((INT16U)(temp)));
     		}else{											//value is positive
-    		    sine_val = (sine_val<<1);
-    		    temp = level<<6;
-                temp = (AMP_SCALE*temp);
-                temp *= sine_val;
-                temp = temp>>44;
-    		    sine_vals[i] = ((INT16U)temp + 2048);
+    			sine_val = (sine_val<<1);
+    			temp = (AMP_SCALE*level);
+    			temp *= sine_val;
+    			temp = temp>>42;
+    			sine_vals[i] = ((INT16U)temp + 2048);
     		}
 
     		argument += (TS*frequency);
-    		//2147483648
     		if(argument >= BIT31_MASK) {
     			argument -= BIT31_MASK;
     		}else{
     			// do nothing
     		}
-
     	}
     	DMAFillBuffer(index, sine_vals);
     }
