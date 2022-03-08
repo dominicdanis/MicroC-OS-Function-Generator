@@ -147,11 +147,9 @@ static void DAC0Init(void){
  ************************************************************************/
 static void PitInit(void){
 	//the PIT needs to be configured to generate triggers at the desired sample rate and the DAC
-	//must be configured with the DMAEN bit set so the samples come from the DMA
 	SIM->SCGC6 |= SIM_SCGC6_PIT(1);    /* turn on PIT clock */
     PIT->MCR = PIT_MCR_MDIS(0);        /* enable PIT clock */
     PIT->CHANNEL[0].LDVAL = 1249;      /* set Tep to 20.083us for fs=48kHz (Buss clock = 60MHz) */
-    //PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TIE(1)|PIT_TCTRL_TEN(1)); /* enable interrupts, start Timer 0 */
     PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TEN(1)); /* start Timer 0 */
 }
 
