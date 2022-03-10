@@ -13,9 +13,10 @@
 #include "DMA.h"
 #include "K65TWR_GPIO.h"
 
-#define TS 44739
-#define BIT31_MASK 2147483648	/* 1<<31 */
-#define AMP_SCALE 95325
+#define TS 44739				/* TS = Ts=1/48000 scaled up by (2^31) */
+#define BIT31_MASK 0x80000000	/* 2^31 */
+#define BIT16_MASK 0x10000		/* 2^16 */
+#define AMP_SCALE 1490  		/* (1.5/3.3)/20*(2^15) */
 
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
 
@@ -111,7 +112,6 @@ static void sineGenTask(void *p_arg){
 	INT32U sine_val;
 	INT32U argument = 0;
 	INT8U index = 0;
-	INT64U temp = 0;
 	INT16U frequency;
 	INT8U level;
     OS_ERR os_err;
@@ -119,28 +119,24 @@ static void sineGenTask(void *p_arg){
 
     while(1) {
     	DB4_TURN_OFF();                             /* Turn off debug bit while waiting */
-    	index = DMAReadyPend(0, &os_err);                   //pend on the DMA
+    	index = DMAReadyPend(0, &os_err);           /* pend on the DMA */
     	DB4_TURN_ON();
     	frequency = SinewaveGetFreq();
     	level = SinewaveGetLevel();
-
     	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
     		sine_val = arm_sin_q31(argument);
-    		if((sine_val & BIT31_MASK) > 0){				//value is negative
-    			sine_val = (sine_val<<1);
-    			sine_val = (~sine_val);
-    			temp = (AMP_SCALE*level);                    //multiply level and scaler to find Vpeak
-    			temp *= sine_val;                           //find offset for each sample
-    			temp = temp>>42;                            //scale back to a 12 bit
-    			sine_vals[i] = (2048 - ((INT16U)(temp)));
-    		}else{											//value is positive
-    			sine_val = (sine_val<<1);
-    			temp = (AMP_SCALE*level);
-    			temp *= sine_val;
-    			temp = temp>>42;
-    			sine_vals[i] = ((INT16U)temp + 2048);
+    		if((sine_val & BIT31_MASK) > 0){				/* value is negative */
+    			sine_val = (~sine_val & (~BIT31_MASK));		/* drop the sign bit and invert */
+    			sine_val = sine_val >> 15;					/* truncate down to 16 bits */
+    			sine_val = (sine_val) * (AMP_SCALE*level);	/* 16bit*16bit = 32bit result */
+    			sine_val = sine_val >> 20;					/* truncate down to 12 bits */
+    			sine_vals[i] = (2047 - ((INT16U)(sine_val))); /* add DC offset */
+    		}else{											/* value is positive */
+    			sine_val = sine_val >> 15;					/* truncate down to 16 bits */
+    			sine_val = (sine_val) * (AMP_SCALE*level);  /* 16bit*16bit = 32bit result */
+    			sine_val = sine_val >> 20;					/* truncate down to 12 bits */
+    			sine_vals[i] = ((INT16U)sine_val + 2047);	/* add DC offset */
     		}
-
     		argument += (TS*frequency);
     		if(argument >= BIT31_MASK) {
     			argument -= BIT31_MASK;
