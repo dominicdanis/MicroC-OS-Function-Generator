@@ -15,8 +15,9 @@
 
 #define TS 44739				/* TS = Ts=1/48000 scaled up by (2^31) */
 #define BIT31_MASK 0x80000000	/* 2^31 */
-#define BIT16_MASK 0x10000		/* 2^16 */
-#define AMP_SCALE 1490  		/* (3/(20*3.3))*(2^15) rounded up */
+#define BIT15_MASK 0x8000		/* 2^15 */
+#define BIT20_MASK 0x100000		/* 2^20 */
+#define AMP_SCALE 1490  		/* (3/(20*3.3))*(2^15) and rounded up */
 
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
 
@@ -125,17 +126,17 @@ static void sineGenTask(void *p_arg){
     	level = SinewaveGetLevel();
     	for(INT16U i=0; i<SAMPLES_PER_BLOCK; i++){
     		sine_val = arm_sin_q31(argument);
-    		if((sine_val & BIT31_MASK) > 0){				/* value is negative */
-    			sine_val = (~sine_val & (~BIT31_MASK));		/* drop the sign bit and invert */
-    			sine_val = sine_val >> 15;					/* truncate down to 16 bits */
-    			sine_val = (sine_val) * (AMP_SCALE*level);	/* 16bit*16bit = 32bit result */
-    			sine_val = sine_val >> 20;					/* truncate down to 12 bits */
-    			sine_vals[i] = (2047 - ((INT16U)(sine_val))); /* add DC offset */
-    		}else{											/* value is positive */
-    			sine_val = sine_val >> 15;					/* truncate down to 16 bits */
-    			sine_val = (sine_val) * (AMP_SCALE*level);  /* 16bit*16bit = 32bit result */
-    			sine_val = sine_val >> 20;					/* truncate down to 12 bits */
-    			sine_vals[i] = ((INT16U)sine_val + 2047);	/* add DC offset */
+    		if((sine_val & BIT31_MASK) > 0){				  // value is negative
+    			sine_val = (~sine_val & (~BIT31_MASK));		  // drop the sign bit and invert
+    			sine_val = ((sine_val + BIT15_MASK) >> 15);	  // round down to 16 bits
+    			sine_val = (sine_val) * (AMP_SCALE*level);	  // 16bit*16bit = 32bit result
+    			sine_val = ((sine_val + BIT20_MASK) >> 20);   // round down to 12 bits
+    			sine_vals[i] = (2047 - ((INT16U)(sine_val))); // add DC offset
+    		}else{											  // value is positive
+    			sine_val = ((sine_val + BIT15_MASK) >> 15);	  // round down to 16 bits
+    			sine_val = (sine_val) * (AMP_SCALE*level);    // 16bit*16bit = 32bit result
+    			sine_val = ((sine_val + BIT20_MASK) >> 20);	  // round down to 12 bits
+    			sine_vals[i] = ((INT16U)sine_val + 2047);	  // add DC offset
     		}
     		argument += (TS*frequency);
     		if(argument >= BIT31_MASK) {
