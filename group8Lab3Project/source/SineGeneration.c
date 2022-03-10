@@ -16,7 +16,7 @@
 #define TS 44739				/* TS = Ts=1/48000 scaled up by (2^31) */
 #define BIT31_MASK 0x80000000	/* 2^31 */
 #define BIT16_MASK 0x10000		/* 2^16 */
-#define AMP_SCALE 1490  		/* (1.5/3.3)/20*(2^15) */
+#define AMP_SCALE 1490  		/* (3/(20*3.3))*(2^15) rounded up */
 
 static INT16U sine_vals[SAMPLES_PER_BLOCK];
 
