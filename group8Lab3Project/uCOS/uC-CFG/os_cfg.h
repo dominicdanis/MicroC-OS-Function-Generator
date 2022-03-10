@@ -48,7 +48,7 @@
 #define OS_CFG_PRIO_MAX                 32u                /* Defines the maximum number of task priorities (see OS_PRIO data type) */
 
 #define OS_CFG_SCHED_LOCK_TIME_MEAS_EN  DEF_DISABLED       /* Include (DEF_ENABLED) code to measure scheduler lock time             */
-#define OS_CFG_SCHED_ROUND_ROBIN_EN     DEF_ENABLED        /* Include (DEF_ENABLED) code for Round-Robin scheduling                 */
+#define OS_CFG_SCHED_ROUND_ROBIN_EN     DEF_DISABLED        /* Include (DEF_ENABLED) code for Round-Robin scheduling                 */
 
 #define OS_CFG_STK_SIZE_MIN             64u                /* Minimum allowable task stack size                                     */
 
@@ -71,10 +71,10 @@
 
 
                                                            /* -------------------------- MESSAGE QUEUES --------------------------  */
-#define OS_CFG_Q_EN                     DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for QUEUES                       */
-#define OS_CFG_Q_DEL_EN                 DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQDel()                           */
-#define OS_CFG_Q_FLUSH_EN               DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQFlush()                         */
-#define OS_CFG_Q_PEND_ABORT_EN          DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQPendAbort()                     */
+#define OS_CFG_Q_EN                     DEF_DISABLED        /* Enable (DEF_ENABLED) code generation for QUEUES                       */
+#define OS_CFG_Q_DEL_EN                 DEF_DISABLED        /*     Include (DEF_ENABLED) code for OSQDel()                           */
+#define OS_CFG_Q_FLUSH_EN               DEF_DISABLED        /*     Include (DEF_ENABLED) code for OSQFlush()                         */
+#define OS_CFG_Q_PEND_ABORT_EN          DEF_DISABLED        /*     Include (DEF_ENABLED) code for OSQPendAbort()                     */
 
 
                                                            /* ---------------------------- SEMAPHORES ----------------------------- */
@@ -85,8 +85,8 @@
 
 
                                                            /* ----------------------------- MONITORS ------------------------------ */
-#define OS_CFG_MON_EN                   DEF_ENABLED       /* Enable (DEF_ENABLED) code generation for MONITORS                     */
-#define OS_CFG_MON_DEL_EN               DEF_ENABLED       /*     Include (DEF_ENABLED) code for OSMonDel()                         */
+#define OS_CFG_MON_EN                   DEF_DISABLED       /* Enable (DEF_ENABLED) code generation for MONITORS                     */
+#define OS_CFG_MON_DEL_EN               DEF_DISABLED       /*     Include (DEF_ENABLED) code for OSMonDel()                         */
 
                                                            /* -------------------------- TASK MANAGEMENT -------------------------- */
 #define OS_CFG_STAT_TASK_EN             DEF_ENABLED        /* Enable (DEF_ENABLED) the statistics task                              */
@@ -109,12 +109,12 @@
 #define OS_CFG_TLS_TBL_SIZE             0u                 /* Include (DEF_ENABLED) code for Task Local Storage (TLS) registers     */
 
                                                            /* ------------------------- TIME MANAGEMENT --------------------------  */
-#define OS_CFG_TIME_DLY_HMSM_EN         DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTimeDlyHMSM()                        */
+#define OS_CFG_TIME_DLY_HMSM_EN         DEF_DISABLED        /* Include (DEF_ENABLED) code for OSTimeDlyHMSM()                        */
 #define OS_CFG_TIME_DLY_RESUME_EN       DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTimeDlyResume()                      */
 
                                                            /* ------------------------- TIMER MANAGEMENT -------------------------- */
-#define OS_CFG_TMR_EN                   DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for TIMERS                       */
-#define OS_CFG_TMR_DEL_EN               DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for OSTmrDel()                   */
+#define OS_CFG_TMR_EN                   DEF_DISABLED        /* Enable (DEF_ENABLED) code generation for TIMERS                       */
+#define OS_CFG_TMR_DEL_EN               DEF_DISABLED        /* Enable (DEF_ENABLED) code generation for OSTmrDel()                   */
 
                                                            /* ------------------------- TRACE RECORDER ---------------------------- */
 #define OS_CFG_TRACE_EN                 DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace instrumentation                  */

@@ -95,8 +95,6 @@ static void tsiChCalibration(INT8U channel){
 * tsiTask: uCOS Task
 *            Processes and starts alternate sensors each time through to avoid
 *            blocking.
-*            In order to not block the task period should be > 5ms.
-*            To not miss a press, the task period should be < ~25ms.
 * -Private
   ********************************************************************************/
 static void tsiTask(void *p_arg){
@@ -125,7 +123,7 @@ static void tsiStartScan(INT8U channel){
 }
 /********************************************************************************
 * TSIProcScan: Waits for the scan to complete, then sets the appropriate
-*              flags is a touch was detected.
+*              flags if a touch was detected.
 *              Note the scan must be started before this is called.
 *              channel - the channel to be processed
 * -Private
