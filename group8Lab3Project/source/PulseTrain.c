@@ -43,6 +43,7 @@ void PulseTrainInit(void){
 void PulseTrainSetFreq(INT16U freq){
     INT8U ps_value;
     INT8U scaler_value;
+    INT8U level;
     OS_ERR os_err;
     OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
     CurrentSpecs.frequency = freq;
@@ -73,6 +74,11 @@ void PulseTrainSetFreq(INT16U freq){
     FTM3->SC = FTM_SC_CLKS(1)|FTM_SC_CPWMS(1)|FTM_SC_PS(ps_value);
     Mod_Value = BUS_FREQ / (scaler_value*freq*2);
     FTM3->MOD = FTM_MOD_MOD(Mod_Value);     /* Set pulse train period */
+
+    OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err); /* The level is dependent on frequency */
+    level = CurrentSpecs.level;                                                      /* Reset the level */
+    OSMutexPost(&PulseTrainMutexKey, OS_OPT_POST_NONE, &os_err);
+    PulseTrainSetLevel(level);
 }
 /*****************************************************************************************
 * Public setter function to set amplitude
