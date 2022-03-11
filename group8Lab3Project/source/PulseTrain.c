@@ -26,6 +26,7 @@ static PULSE_TRAIN_SPECS CurrentSpecs;
 static OS_MUTEX PulseTrainMutexKey;
 /*****************************************************************************************
 * Init function - creates task and Mutex.
+* 2/15/2022 Aili Emory
 *****************************************************************************************/
 void PulseTrainInit(void){
     OS_ERR os_err;
@@ -39,6 +40,7 @@ void PulseTrainInit(void){
 }
 /*****************************************************************************************
 * Public setter function to set frequency
+* 02/15/2022 Aili Emory
 *****************************************************************************************/
 void PulseTrainSetFreq(INT16U freq){
     INT8U ps_value;
@@ -81,7 +83,8 @@ void PulseTrainSetFreq(INT16U freq){
     PulseTrainSetLevel(level);
 }
 /*****************************************************************************************
-* Public setter function to set amplitude
+* Public setter function to set duty cycle
+* 02/15/2022 Aili Emory
 *****************************************************************************************/
 void PulseTrainSetLevel(INT8U level){
     INT16U cnV;
@@ -95,6 +98,7 @@ void PulseTrainSetLevel(INT8U level){
 }
 /*****************************************************************************************
 * Getter function for frequency
+* 02/15/2022 Aili Emory
 *****************************************************************************************/
 INT16U PulseTrainGetFreq(void){
     INT16U freq;
@@ -106,6 +110,7 @@ INT16U PulseTrainGetFreq(void){
 }
 /*****************************************************************************************
 * Getter function for level
+* 02/15/2022 Aili Emory
 *****************************************************************************************/
 INT8U PulseTrainGetLevel(void){
     INT8U level;

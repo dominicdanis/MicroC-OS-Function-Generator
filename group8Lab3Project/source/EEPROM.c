@@ -1,6 +1,7 @@
 /*******************************************************************************
 * EECE444 Lab 3 Code
 * EEPROM.c is a module that will read and write to a 93LC56B EEPROM using SPI
+* Verifies that read data matches last wrote data with a 16 bit checksum
 *
 * 02/24/2022 Dominic Danis
 *
@@ -13,7 +14,6 @@
 /*Defined Constants for EEPROM Commands*/
 #define EWEN 0x04C0
 #define EWDS 0x0400
-#define ERAL 0x0480
 /*Private functions*/
 static void EEPROMCmd(INT16U cmd);
 static INT16U EEPROMRead(INT8U addr);
@@ -26,12 +26,12 @@ typedef union{
     INT16U ConfigArr[(sizeof(SAVED_CONFIG)+1)/2];
 } EEPROMBLOCK;
 /*Locally stored EEPROMBLOCK*/
-static EEPROMBLOCK EEPROMCurrent;
+static EEPROMBLOCK eepromCurrent;
 /*****************************************************************************************
 * EEPROMInit
 * Function to initialize SPI from communication with 93LC56B EEPROM
 * SPI is mapped to PTD11-14
-* 3/3/2022
+* From SPI notes Todd Morton
  *****************************************************************************************/
 void EEPROMInit(void){
     //Clocks and connecting pins
@@ -57,9 +57,9 @@ void EEPROMInit(void){
 * Dominic Danis 03/03/2022
  *****************************************************************************************/
 void EEPROMSaveState(INT8U state){
-    EEPROMCurrent.Config.state = state;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    eepromCurrent.Config.state = state;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
     EEPROMSaveConfig();
 }
 /*****************************************************************************************
@@ -69,9 +69,9 @@ void EEPROMSaveState(INT8U state){
 * 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSaveSineFreq(INT16U sine_freq){
-    EEPROMCurrent.Config.sine_freq = sine_freq;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    eepromCurrent.Config.sine_freq = sine_freq;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
     EEPROMSaveConfig();
 }
 /*****************************************************************************************
@@ -81,9 +81,9 @@ void EEPROMSaveSineFreq(INT16U sine_freq){
 * 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSaveSineLevel(INT8U sine_level){
-    EEPROMCurrent.Config.sine_level = sine_level;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    eepromCurrent.Config.sine_level = sine_level;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
     EEPROMSaveConfig();
 }
 /*****************************************************************************************
@@ -93,9 +93,9 @@ void EEPROMSaveSineLevel(INT8U sine_level){
 * 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSavePulseFreq(INT16U pulse_freq){
-    EEPROMCurrent.Config.pulse_freq = pulse_freq;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    eepromCurrent.Config.pulse_freq = pulse_freq;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
     EEPROMSaveConfig();
 }
 /*****************************************************************************************
@@ -105,21 +105,22 @@ void EEPROMSavePulseFreq(INT16U pulse_freq){
 * 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSavePulseLevel(INT8U pulse_level){
-    EEPROMCurrent.Config.pulse_level = pulse_level;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    eepromCurrent.Config.pulse_level = pulse_level;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
     EEPROMSaveConfig();
 }
 /*****************************************************************************************
 * EEPROMSaveConfig
-* Writes the current configuration held in EEPROMCurrent to the EEPROM
+* Writes the current configuration held in eepromCurrent to the EEPROM
+* 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSaveConfig(void){
     OS_ERR os_err;
     INT8U addr = 0;
     EEPROMCmd(EWEN);
     for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){          /*Write the entire stored array*/
-        EEPROMWrite(addr,EEPROMCurrent.ConfigArr[increment]);
+        EEPROMWrite(addr,eepromCurrent.ConfigArr[increment]);
         addr++;
         OSTimeDly(7,OS_OPT_TIME_DLY,&os_err);
     }
@@ -127,7 +128,7 @@ void EEPROMSaveConfig(void){
 }
 /*****************************************************************************************
 * EEPROMGetConfig
-* Reads the and loads config from EEPROM into EEPROMCurrent. Calculates checksum of saved values
+* Reads the and loads config from EEPROM into eepromCurrent. Calculates checksum of saved values
 * and compares to saved checksum. Will return loaded value if they match. Will return default
 * configuration if they don't.
 * 03/03/2022 Dominic Danis
@@ -136,21 +137,20 @@ SAVED_CONFIG EEPROMGetConfig(void){
     INT8U addr = 0;
     INT16U cs = 0;
     for(INT8U increment = 0; increment<((sizeof(SAVED_CONFIG)+1)/2); increment++){          /*Read the entire array*/
-        EEPROMCurrent.ConfigArr[increment] = EEPROMRead(addr);
+        eepromCurrent.ConfigArr[increment] = EEPROMRead(addr);
         addr++;
     }
-    cs = EEPROMCurrent.Config.checksum;
-    EEPROMCurrent.Config.checksum = 0;
-    EEPROMCurrent.Config.checksum = MemChkSum((INT8U *)EEPROMCurrent.ConfigArr, (INT8U *)EEPROMCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
-    if(cs != EEPROMCurrent.Config.checksum){                                                /*Verify the loaded values agree with loaded checksum*/
-        EEPROMCurrent.Config.state = 0;                                                     /*Set to defaults*/
-        EEPROMCurrent.Config.sine_freq = 1000;
-        EEPROMCurrent.Config.sine_level = 10;
-        EEPROMCurrent.Config.pulse_freq = 1000;
-        EEPROMCurrent.Config.pulse_level = 10;
-    }
-    else{}
-    return EEPROMCurrent.Config;
+    cs = eepromCurrent.Config.checksum;
+    eepromCurrent.Config.checksum = 0;
+    eepromCurrent.Config.checksum = MemChkSum((INT8U *)eepromCurrent.ConfigArr, (INT8U *)eepromCurrent.ConfigArr+(sizeof(SAVED_CONFIG)+1)/2);
+    if(cs != eepromCurrent.Config.checksum){                                                /*Verify the loaded values agree with loaded checksum*/
+        eepromCurrent.Config.state = 0;                                                     /*Set to defaults*/
+        eepromCurrent.Config.sine_freq = 1000;
+        eepromCurrent.Config.sine_level = 10;
+        eepromCurrent.Config.pulse_freq = 1000;
+        eepromCurrent.Config.pulse_level = 10;
+    }else{}
+    return eepromCurrent.Config;
 }
 /*****************************************************************************************
 * EEEPROMRead

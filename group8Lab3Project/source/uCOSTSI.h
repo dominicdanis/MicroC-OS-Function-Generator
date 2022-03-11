@@ -15,8 +15,19 @@
 #define K65TWR_TSI_H_
 #define BRD_PAD1_CH  12U
 #define BRD_PAD2_CH  11U
-
+/********************************************************************
+* TSIPend(): TSIPend provides access to the TSI buffer via an
+*            Event flag. Returns value of sensor flag variable and clears it to
+*            receive sensor press only one time.
+* - Public
+* 02/17/2022 Aili Emory
+********************************************************************/
 OS_FLAGS TSIPend(OS_TICK tout, OS_ERR *os_err);
+/********************************************************************************
+ * K65TWR_TSI0Init: Initializes TSI0 module
+ * -Public
+ * 02/17/2022 Aili Emory
+ ********************************************************************************/
 void TSIInit(void); /* TSI Initialization*/
 
 #endif /*UCOSTSI_H_*/

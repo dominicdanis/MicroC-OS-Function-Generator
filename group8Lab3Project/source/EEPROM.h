@@ -2,7 +2,7 @@
 * EECE444 Lab 3 Code
 * EEPROM.c is a module that will read and write to a 93LC56B EEPROM using SPI
 *
-* 02/24/2022 Nick Coyle
+* 02/24/2022 Dominic Danis
 *
 * Includes functions by Todd Morton in SPI notes
 *******************************************************************************/

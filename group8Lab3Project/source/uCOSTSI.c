@@ -47,6 +47,7 @@ static void tsiTask(void *p_arg);
 /********************************************************************************
  * K65TWR_TSI0Init: Initializes TSI0 module
  * -Public
+ * 02/17/2022 Aili Emory
  ********************************************************************************/
 void TSIInit(void){
     OS_ERR os_err;
@@ -89,6 +90,7 @@ void TSIInit(void){
 *                 channel - the channel to calibrate, range 0-15
 *                 Note - the sensor must not be pressed when this is executed.
 * -Private
+* 02/17/2022 Aili Emory
  ********************************************************************************/
 static void tsiChCalibration(INT8U channel){
     tsiStartScan(channel);
@@ -103,6 +105,7 @@ static void tsiChCalibration(INT8U channel){
 *          TSI sensors are scanned sequentially.
 *          There are two pending service calls to do two things sequentially.
 * -Private
+* 02/17/2022 Aili Emory
   ********************************************************************************/
 static void tsiTask(void *p_arg){
     OS_ERR os_err;
@@ -123,6 +126,7 @@ static void tsiTask(void *p_arg){
 * TSIStartScan: Starts a scan of a TSI sensor.
 *               channel - the TSI channel to be started. Range 0-15
 * -Private
+* 02/17/2022 Aili Emory
  ********************************************************************************/
 static void tsiStartScan(INT8U channel){
     TSI0->DATA = TSI_DATA_TSICH(channel);       //set channel
@@ -132,6 +136,7 @@ static void tsiStartScan(INT8U channel){
 * TSIProcScan: TSI scanner signals an event flag group when a sensor is touched.
 *              The sensor must be released before a flag is signaled again.
 * -Private
+* 02/17/2022 Aili Emory
  ********************************************************************************/
 static void tsiProcScan(INT8U channel){
     INT16U tsi_touch_count;
@@ -159,6 +164,7 @@ static void tsiProcScan(INT8U channel){
 *            Event flag. Returns value of sensor flag variable and clears it to
 *            receive sensor press only one time.
 * - Public
+* 02/17/2022 Aili Emory
 ********************************************************************/
 OS_FLAGS TSIPend(OS_TICK tout, OS_ERR *os_err){
     OS_FLAGS sflags;
