@@ -267,8 +267,8 @@ static void appTouchSensorTask(void *p_arg){
     (void)p_arg;
 
     while(1){
-    	DB2_TURN_OFF();                             /* Turn off debug bit while waiting */
-    	cur_sense_flags = TSIPend(100,&os_err);
+    	DB2_TURN_OFF();                             /* Turn off debug bit while in waiting state */
+    	cur_sense_flags = TSIPend(0,&os_err);
     	DB2_TURN_ON();
         if(os_err == OS_ERR_TIMEOUT){
             cur_sense_flags = 0;
