@@ -6,8 +6,10 @@
 *
 * Includes functions by Todd Morton in SPI notes
 *******************************************************************************/
+#ifndef EEPROM_H_
+#define EEPROM_H_
 
-/*Structure Definiton for all parameters that must be kept track of*/
+/*Structure Definition for all parameters that must be kept track of*/
 typedef struct{
     INT8U state;
     INT16U sine_freq;
@@ -69,3 +71,5 @@ void EEPROMSavePulseFreq(INT16U pulse_freq);
 * 03/03/2022 Dominic Danis
  *****************************************************************************************/
 void EEPROMSavePulseLevel(INT8U pulse_level);
+
+#endif

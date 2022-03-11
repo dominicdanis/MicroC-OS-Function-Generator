@@ -138,7 +138,6 @@ static void DAC0Init(void){
     SIM->SCGC2 |= SIM_SCGC2_DAC0(1);  /* enable DAC clock */
     DAC0->C0 |= DAC_C0_DACEN(1);      /* set bit 7 to enable DAC */
     DAC0->C0 |= DAC_C0_DACRFS(1);     /* set bit 6 for DACREF_1 so VDDA 3.3V ref */
-    DAC0->C0 |= DAC_C0_DACSWTRG(1);   /* set bit 1 select hardware trigger */
 }
 
 /*******************************************************************************************

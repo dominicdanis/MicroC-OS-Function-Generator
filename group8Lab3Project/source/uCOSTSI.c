@@ -1,8 +1,15 @@
 /*******************************************************************************
  * uCOS TSI Module
+ * Implements capacitive touch sensing.
+ * There is calibration of the sensors. When a sensor is touched, a flag is set, in a flag group
+ * and OSFlagPost() is called. The flag is only set, at the start of a sensor press. The current
+ * sensor state and last sensor state are compared to determine the edge of the sensor press start.
+ *
  * 02/17/2022 Aili Emory
+ *
+ * Includes functions by Todd Morton in Flag notes
  *******************************************************************************/
-#include "os.h"     /*Header files: Dependencies*/
+#include "os.h"
 #include "app_cfg.h"
 #include "MCUType.h"
 #include "uCOSTSI.h"
@@ -93,8 +100,8 @@ static void tsiChCalibration(INT8U channel){
 }
 /********************************************************************************
 * tsiTask: uCOS Task
-*            Processes and starts alternate sensors each time through to avoid
-*            blocking.
+*          TSI sensors are scanned sequentially.
+*          There are two pending service calls to do two things sequentially.
 * -Private
   ********************************************************************************/
 static void tsiTask(void *p_arg){
@@ -122,10 +129,8 @@ static void tsiStartScan(INT8U channel){
     TSI0->DATA |= TSI_DATA_SWTS(1);             //start a scan sequence
 }
 /********************************************************************************
-* TSIProcScan: Waits for the scan to complete, then sets the appropriate
-*              flags if a touch was detected.
-*              Note the scan must be started before this is called.
-*              channel - the channel to be processed
+* TSIProcScan: TSI scanner signals an event flag group when a sensor is touched.
+*              The sensor must be released before a flag is signaled again.
 * -Private
  ********************************************************************************/
 static void tsiProcScan(INT8U channel){
@@ -150,8 +155,8 @@ static void tsiProcScan(INT8U channel){
      }
 }
 /********************************************************************
-* TSIPend(): A function to provide access to the TSI buffer via a
-*            semaphore. Returns value of sensor flag variable and clears it to
+* TSIPend(): TSIPend provides access to the TSI buffer via an
+*            Event flag. Returns value of sensor flag variable and clears it to
 *            receive sensor press only one time.
 * - Public
 ********************************************************************/
