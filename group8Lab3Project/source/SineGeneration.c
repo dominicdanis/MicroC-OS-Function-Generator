@@ -20,8 +20,6 @@
 #define AMP_SCALE 1490          /* (3/(20*3.3))*(2^15) and rounded up */
 #define DC_OFF 2047             /* halfway point of DAC0 = 2048-1 */
 
-static INT16U sine_vals[SAMPLES_PER_BLOCK];
-
 /****************************************************************************************
 * Allocate task control block
 ****************************************************************************************/
@@ -37,8 +35,9 @@ typedef struct{
 /****************************************************************************************
 * Private Resources
 ****************************************************************************************/
-static SINE_SPECS CurrentSpecs;
-static OS_MUTEX SineMutexKey;
+static SINE_SPECS sineCurrentSpecs;
+static OS_MUTEX sineMutexKey;
+static INT16U sine_vals[SAMPLES_PER_BLOCK];
 /*****************************************************************************************
 * Task Function Prototypes.
 *****************************************************************************************/
@@ -46,6 +45,7 @@ static void sineGenTask(void *p_arg);
 
 /*****************************************************************************************
 * Init function - creates task and Mutex.
+* 02/14/2022 Dominic Danis
 *****************************************************************************************/
 void SineGenInit(void){
     OS_ERR os_err;
@@ -63,52 +63,59 @@ void SineGenInit(void){
                 (OS_OPT_TASK_NONE),
                 &os_err);
 
-    OSMutexCreate(&SineMutexKey,"Sine Mutex", &os_err);
+    OSMutexCreate(&sineMutexKey,"Sine Mutex", &os_err);
 }
 /*****************************************************************************************
 * Public setter function to set frequency
+* 02/14/2022 Dominic Danis
 *****************************************************************************************/
 void SinewaveSetFreq(INT16U freq){
     OS_ERR os_err;
-    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    CurrentSpecs.frequency = freq;
-    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    OSMutexPend(&sineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    sineCurrentSpecs.frequency = freq;
+    OSMutexPost(&sineMutexKey, OS_OPT_POST_NONE, &os_err);
 }
 /*****************************************************************************************
 * Public setter function to set amplitude
+* 02/14/2022 Dominic Danis
 *****************************************************************************************/
 void SinewaveSetLevel(INT8U level){
     OS_ERR os_err;
-    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    CurrentSpecs.level = level;
-    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    OSMutexPend(&sineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    sineCurrentSpecs.level = level;
+    OSMutexPost(&sineMutexKey, OS_OPT_POST_NONE, &os_err);
 }
 /*****************************************************************************************
 * Getter function for frequency
+* 02/14/2022 Dominic Danis
 *****************************************************************************************/
 INT16U SinewaveGetFreq(void){
     INT16U freq;
     OS_ERR os_err;
-    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    freq = CurrentSpecs.frequency;
-    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    OSMutexPend(&sineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    freq = sineCurrentSpecs.frequency;
+    OSMutexPost(&sineMutexKey, OS_OPT_POST_NONE, &os_err);
     return freq;
 }
 /*****************************************************************************************
 * Getter function for level
+* 02/14/2022 Dominic Danis
 *****************************************************************************************/
 INT8U SinewaveGetLevel(void){
     INT8U level;
     OS_ERR os_err;
-    OSMutexPend(&SineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
-    level = CurrentSpecs.level;
-    OSMutexPost(&SineMutexKey, OS_OPT_POST_NONE, &os_err);
+    OSMutexPend(&sineMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
+    level = sineCurrentSpecs.level;
+    OSMutexPost(&sineMutexKey, OS_OPT_POST_NONE, &os_err);
     return level;
 }
 
 /*****************************************************************************************
-* sineGenTask - unfinished. Will pend on DMA ISR, get current configurations, compute sine values
-* store in PP buffer
+* sineGenTask - This task waits for DMA to signal it to generate values, iteratively calls
+* arm_sin_q31(), scales and converts values to fit DAC0, then passes a pointer to the new
+* array of generated values back to DMA module
+*
+* 03/03/2022 Aili Emory, Dominic Danis, Nick Coyle
 *****************************************************************************************/
 static void sineGenTask(void *p_arg){
     INT32U sine_val;
