@@ -1,6 +1,7 @@
 /*****************************************************************************************
- * Lab2 EE444 MicroC/OS Function Generator Team Project
+ * Lab3 EE444 MicroC/OS Function Generator Team Project
  * A function generator that runs under MicroC/OS, a preemptive multitasking kernel.
+ *
  * 01/25/2022 Aili Emory, Dominic Danis, Nick Coyle
  *****************************************************************************************/
 #include "os.h"
@@ -84,7 +85,6 @@ void main(void) {
 
 	OSStart(&os_err);               		   /*Start multitasking(i.e. give control to uC/OS)    */
 }
-
 /*****************************************************************************************
  * STARTUP TASK
  * This should run once and be deleted. Could restart everything by creating.
@@ -162,8 +162,8 @@ static void appProcessKeyTask(void *p_arg){
 	OS_ERR os_err;
 	INT8C kchar;
 	INT8U number_value;
-	INT16U user_freq = 0;
 	UI_STATES_T current_state;
+    INT16U user_freq = 0;
 	(void)p_arg;
 
 	OSMutexPend(&appUIStateKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err);
@@ -260,16 +260,14 @@ static void appProcessKeyTask(void *p_arg){
 * 02/16/2022 Aili Emory
  *****************************************************************************************/
 static void appTouchSensorTask(void *p_arg){
+    OS_ERR os_err;
     OS_FLAGS cur_sense_flags;
     UI_STATES_T current_state;
     INT8U level;
-    OS_ERR os_err;
     (void)p_arg;
 
     while(1){
-    	DB2_TURN_OFF();                             /* Turn off debug bit while in waiting state */
     	cur_sense_flags = TSIPend(0,&os_err);
-    	DB2_TURN_ON();
         if(os_err == OS_ERR_TIMEOUT){
             cur_sense_flags = 0;
         }else{
@@ -311,7 +309,6 @@ static void appTouchSensorTask(void *p_arg){
         appDispHelper(current_state);
     }
 }
-
 /*****************************************************************************************
 * appDispHelper
 * Helper function to prevent code duplication. Displays the state, freq, and level
@@ -358,7 +355,6 @@ static void appDispHelper(UI_STATES_T current_state) {
 		// do nothing
 	}
 }
-
 /****************************************************************************************
  * appIntLen
  * Return the number of digits in an integer

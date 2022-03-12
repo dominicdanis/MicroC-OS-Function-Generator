@@ -3,7 +3,6 @@
 * Contains frequency and level data for the Pulse Train. The functions that access this data
 * must use a mutex. When the setter functions (for frequency and level) are called, the functions
 * set the current specs and they set the values in the FTM3 registers, to reflect the new frequency or level.
-*
 * 02/15/2022 Aili Emory
 *****************************************************************************************/
 #include "os.h"
@@ -25,7 +24,7 @@ typedef struct{
 static PULSE_TRAIN_SPECS CurrentSpecs;
 static OS_MUTEX PulseTrainMutexKey;
 /*****************************************************************************************
-* Init function - creates task and Mutex.
+* Init function - creates task and mutex.
 * 2/15/2022 Aili Emory
 *****************************************************************************************/
 void PulseTrainInit(void){
@@ -60,7 +59,7 @@ void PulseTrainSetFreq(INT16U freq){
      *  5..Divide by 32
      *  6..Divide by 64
      *  7..Divide by 128*/
-    if(freq > 1000){
+    if(freq > 1000){                            /* Prescaler factor selection */
         ps_value = 0;
         scaler_value = 1;
     }
@@ -72,10 +71,9 @@ void PulseTrainSetFreq(INT16U freq){
         ps_value = 7;
         scaler_value = 128;
     }
-    /* Bus clock, center-aligned, dynamic prescaler set by the frequency */
-    FTM3->SC = FTM_SC_CLKS(1)|FTM_SC_CPWMS(1)|FTM_SC_PS(ps_value);
+    FTM3->SC = FTM_SC_CLKS(1)|FTM_SC_CPWMS(1)|FTM_SC_PS(ps_value);  /* Bus clock, center-aligned, dynamic prescaler */
     Mod_Value = BUS_FREQ / (scaler_value*freq*2);
-    FTM3->MOD = FTM_MOD_MOD(Mod_Value);     /* Set pulse train period */
+    FTM3->MOD = FTM_MOD_MOD(Mod_Value);                                         /* Set pulse train period */
 
     OSMutexPend(&PulseTrainMutexKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &os_err); /* The level is dependent on frequency */
     level = CurrentSpecs.level;                                                      /* Reset the level */

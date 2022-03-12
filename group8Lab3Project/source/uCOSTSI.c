@@ -6,8 +6,7 @@
  * sensor state and last sensor state are compared to determine the edge of the sensor press start.
  *
  * 02/17/2022 Aili Emory
- *
- * Includes functions by Todd Morton in Flag notes
+ * Includes functions by Todd Morton in Flag notes and TSI notes
  *******************************************************************************/
 #include "os.h"
 #include "app_cfg.h"
@@ -43,11 +42,10 @@ static void tsiStartScan(INT8U channel);
 static void tsiProcScan(INT8U channel);
 static void tsiChCalibration(INT8U channel);
 static void tsiTask(void *p_arg);
-
 /********************************************************************************
- * K65TWR_TSI0Init: Initializes TSI0 module
- * -Public
- * 02/17/2022 Aili Emory
+ * TSIInit: Initializes TSI0 module
+ * From TSI notes Todd Morton
+ * 02/17/2022 Aili Emory - added flag group and task
  ********************************************************************************/
 void TSIInit(void){
     OS_ERR os_err;
@@ -89,8 +87,7 @@ void TSIInit(void){
 * tsiCalibration: Calibration to find non-touch baseline for a channel
 *                 channel - the channel to calibrate, range 0-15
 *                 Note - the sensor must not be pressed when this is executed.
-* -Private
-* 02/17/2022 Aili Emory
+* From TSI notes Todd Morton
  ********************************************************************************/
 static void tsiChCalibration(INT8U channel){
     tsiStartScan(channel);
@@ -104,8 +101,7 @@ static void tsiChCalibration(INT8U channel){
 * tsiTask: uCOS Task
 *          TSI sensors are scanned sequentially.
 *          There are two pending service calls to do two things sequentially.
-* -Private
-* 02/17/2022 Aili Emory
+* From Flag notes Todd Morton
   ********************************************************************************/
 static void tsiTask(void *p_arg){
     OS_ERR os_err;
@@ -125,8 +121,7 @@ static void tsiTask(void *p_arg){
 /********************************************************************************
 * TSIStartScan: Starts a scan of a TSI sensor.
 *               channel - the TSI channel to be started. Range 0-15
-* -Private
-* 02/17/2022 Aili Emory
+* From TSI notes Todd Morton
  ********************************************************************************/
 static void tsiStartScan(INT8U channel){
     TSI0->DATA = TSI_DATA_TSICH(channel);       //set channel
@@ -135,13 +130,12 @@ static void tsiStartScan(INT8U channel){
 /********************************************************************************
 * TSIProcScan: TSI scanner signals an event flag group when a sensor is touched.
 *              The sensor must be released before a flag is signaled again.
-* -Private
-* 02/17/2022 Aili Emory
+* From Flag notes Todd Morton
  ********************************************************************************/
 static void tsiProcScan(INT8U channel){
+    OS_ERR os_err;
     INT16U tsi_touch_count;
     T_STATE cur_state;
-    OS_ERR os_err;
     while((TSI0->GENCS & TSI_GENCS_EOSF_MASK) == 0){}
         TSI0->GENCS |= TSI_GENCS_EOSF(1); //Clear flag
         tsi_touch_count = (TSI0->DATA & TSI_DATA_TSICNT_MASK);
@@ -151,8 +145,10 @@ static void tsiProcScan(INT8U channel){
             cur_state = T_OFF;
         }
         if((cur_state == T_ON) && (tsiSensorLevels[channel].state == T_OFF)){
+            DB2_TURN_ON();
             (void)OSFlagPost(&tsiFlags,
                     (OS_FLAGS)(1<<channel),OS_OPT_POST_FLAG_SET, &os_err);
+            DB2_TURN_OFF();
             tsiSensorLevels[channel].state = T_ON;
         }else if(cur_state == T_OFF){
             tsiSensorLevels[channel].state = T_OFF;
@@ -163,8 +159,7 @@ static void tsiProcScan(INT8U channel){
 * TSIPend(): TSIPend provides access to the TSI buffer via an
 *            Event flag. Returns value of sensor flag variable and clears it to
 *            receive sensor press only one time.
-* - Public
-* 02/17/2022 Aili Emory
+* From Flag notes Todd Morton
 ********************************************************************/
 OS_FLAGS TSIPend(OS_TICK tout, OS_ERR *os_err){
     OS_FLAGS sflags;
