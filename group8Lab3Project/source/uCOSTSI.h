@@ -6,8 +6,7 @@
 * sensor state and last sensor state are compared to determine the edge of the sensor press start.
 *
 * 02/17/2022 Aili Emory
-*
-* Includes functions by Todd Morton in Flag notes
+* Includes functions by Todd Morton in Flag notes and TSI notes
 *******************************************************************************/
 #ifndef UCOSTSI_H_
 #define UCOSTSI_H_
@@ -24,7 +23,7 @@
 ********************************************************************/
 OS_FLAGS TSIPend(OS_TICK tout, OS_ERR *os_err);
 /********************************************************************************
- * K65TWR_TSI0Init: Initializes TSI0 module
+ * TSIInit: Initializes TSI0 module
  * -Public
  * 02/17/2022 Aili Emory
  ********************************************************************************/

@@ -5,7 +5,6 @@
  * 02/25/2022 Nick Coyle
  * Includes functions by Todd Morton in DMA notes
  *****************************************************************************************/
-
 #ifndef DMA_H_
 #define DMA_H_
 
@@ -14,7 +13,6 @@
 #define SAMPLES_PER_BLOCK           1024
 #define BYTES_PER_BLOCK             (SAMPLES_PER_BLOCK*BYTES_PER_SAMPLE)
 #define BYTES_PER_BUFFER            (NUM_BLOCKS*BYTES_PER_BLOCK)
-
 /******************************************************************************************
 * Public functions
 ******************************************************************************************/

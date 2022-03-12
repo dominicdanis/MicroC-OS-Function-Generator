@@ -1,5 +1,5 @@
 /*******************************************************************************
-* EECE444 Lab 3 Code
+* EEPROM Module
 * EEPROM.c is a module that will read and write to a 93LC56B EEPROM using SPI
 * Verifies that read data matches last wrote data with a 16 bit checksum
 *

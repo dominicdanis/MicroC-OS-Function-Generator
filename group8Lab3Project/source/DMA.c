@@ -2,7 +2,9 @@
  * DMA Module
  * DMA writes values from the ping pong buffer to the DAC.
  * DMA configured to use hardware triggers from PIT timer.
+ *
  * 02/25/2022 Nick Coyle
+ *
  * Includes functions by Todd Morton in DMA notes
  *****************************************************************************************/
 
@@ -154,7 +156,6 @@ static void PitInit(void){
     PIT->CHANNEL[0].TCTRL = (PIT_TCTRL_TEN(1)); /* start Timer 0 */
 }
 
-
 /*******************************************************************************************
  * DMA Interrupt Handler for the sample stream
  * 08/30/2015 TDM
@@ -175,7 +176,6 @@ void DMA0_DMA16_IRQHandler(void){
     DB5_TURN_OFF();
     OSIntExit();
 }
-
 
 /****************************************************************************************
  * DMA Flag
